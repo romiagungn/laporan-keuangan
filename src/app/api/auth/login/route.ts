@@ -45,7 +45,7 @@ export async function POST(request: Request) {
       name: user.name,
     };
 
-    const token = jwt.sign(tokenPayload, process.env.JWT_SECRET!, {
+    const token = jwt.sign(tokenPayload, process.env.JWT_SECRET! || "password", {
       expiresIn: "7d",
     });
 

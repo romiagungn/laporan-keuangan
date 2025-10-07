@@ -25,6 +25,10 @@ export default async function DashboardPage() {
     to: lastDayOfMonth.toISOString().split("T")[0],
   });
 
+  console.log(categorySummary);
+
+
+
   return (
     <DashboardClient
       userName={session.name}

@@ -1,6 +1,7 @@
 import { LoginForm } from "@/components/auth/login-form";
 
 export default function LoginPage() {
+  console.log(process.env.JWT_SECRET);
   return (
     <main className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
       <div className="w-full max-w-md">
