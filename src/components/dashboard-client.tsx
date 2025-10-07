@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { CategoryChart } from "@/components/charts/category-chart";
+import { getChartData, TimeRange } from "@/lib/actions";
+import { useEffect, useState } from "react";
 import {
   DollarSign,
   Users2,
@@ -33,6 +35,7 @@ import { ExpenseImporter } from "@/components/expense-importer";
 import { fetchFilteredExpenses } from "@/lib/actions";
 import type { Expense } from "@/lib/definitions";
 import { ExportButton } from "@/components/export-button";
+import { useRouter } from "next/navigation";
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("id-ID", {
@@ -42,7 +45,13 @@ const formatCurrency = (amount: number) => {
   }).format(amount);
 };
 
-function RecentExpenses({ expenses }: { expenses: Expense[] }) {
+function RecentExpenses({
+  expenses,
+  onSuccess,
+}: {
+  expenses: Expense[];
+  onSuccess: () => void;
+}) {
   if (expenses.length === 0) {
     return (
       <div className="flex items-center justify-center h-full rounded-lg border border-dashed shadow-sm p-4">
@@ -80,7 +89,7 @@ function RecentExpenses({ expenses }: { expenses: Expense[] }) {
               </Badge>
             </TableCell>
             <TableCell>
-              <ExpenseActions expense={expense} />
+              <ExpenseActions expense={expense} onSuccess={onSuccess} />
             </TableCell>
           </TableRow>
         ))}
@@ -97,28 +106,42 @@ interface DashboardClientProps {
     thisMonthTotal: number;
     thisMonthCount: number;
   };
+  categorySummary: { category: string; total: number }[];
 }
 
 export function DashboardClient({
   initialLatestExpenses,
   summaryData,
+  categorySummary,
 }: DashboardClientProps) {
-  const [latestExpenses, setLatestExpenses] = useState<Expense[]>(
-    initialLatestExpenses,
-  );
-  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
+  const [timeRange, setTimeRange] = useState<TimeRange>("bulanan");
+  const [chartData, setChartData] = useState(categorySummary);
+  const [isChartLoading, setIsChartLoading] = useState(false);
 
-  const refreshData = async () => {
-    setIsLoading(true);
-    try {
-      const expenses = await fetchFilteredExpenses({});
-      setLatestExpenses(expenses.slice(0, 5)); // Ensure we only show 5
-    } catch (error) {
-      console.error("Failed to refresh expenses:", error);
-    } finally {
-      setIsLoading(false);
-    }
+  const handleSuccess = () => {
+    router.refresh();
   };
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsChartLoading(true);
+      try {
+        const data = await getChartData(timeRange);
+        setChartData(data);
+      } catch (error) {
+        console.error("Failed to fetch chart data:", error);
+        setChartData([]); // Clear data on error
+      } finally {
+        setIsChartLoading(false);
+      }
+    };
+
+    // Initial data is already passed for 'bulanan', so no need to fetch again on mount
+    if (timeRange !== "bulanan") {
+      fetchData();
+    }
+  }, [timeRange]);
 
   return (
     <div className="flex-1 space-y-4">
@@ -127,7 +150,7 @@ export function DashboardClient({
         <div className="flex items-center space-x-2">
           <ExportButton />
           <ExpenseImporter />
-          <ExpenseForm>
+          <ExpenseForm onSuccess={handleSuccess}>
             <Button>
               <PlusCircle className="mr-2 h-4 w-4" />
               Tambah Pengeluaran
@@ -202,13 +225,40 @@ export function DashboardClient({
           </div>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
             <Card className="col-span-4">
-              <CardHeader>
-                <CardTitle>Grafik (Segera Hadir)</CardTitle>
+              <CardHeader className="flex items-center justify-between">
+                <CardTitle>Ringkasan Kategori</CardTitle>
+                <div className="flex items-center gap-2">
+                  {(
+                    ["harian", "mingguan", "bulanan", "tahunan"] as TimeRange[]
+                  ).map((range) => (
+                    <Button
+                      key={range}
+                      size="sm"
+                      variant={timeRange === range ? "default" : "outline"}
+                      onClick={() => setTimeRange(range)}
+                      className="capitalize"
+                    >
+                      {range}
+                    </Button>
+                  ))}
+                </div>
               </CardHeader>
-              <CardContent className="pl-2 flex items-center justify-center h-[300px] bg-muted/50 rounded-lg">
-                <p className="text-sm text-muted-foreground">
-                  Chart placeholder
-                </p>
+              <CardContent className="pl-2">
+                {isChartLoading ? (
+                  <div className="flex h-[350px] w-full items-center justify-center">
+                    <p className="text-muted-foreground">
+                      Memuat data grafik...
+                    </p>
+                  </div>
+                ) : chartData.length > 0 ? (
+                  <CategoryChart data={chartData} />
+                ) : (
+                  <div className="flex h-[350px] w-full items-center justify-center rounded-lg bg-muted/50">
+                    <p className="text-sm text-muted-foreground">
+                      Belum ada data untuk ditampilkan.
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
             <Card className="col-span-3">
@@ -217,13 +267,10 @@ export function DashboardClient({
                 <CardDescription>5 transaksi terakhir Anda.</CardDescription>
               </CardHeader>
               <CardContent>
-                {isLoading ? (
-                  <p className="text-center text-muted-foreground">
-                    Memuat data...
-                  </p>
-                ) : (
-                  <RecentExpenses expenses={latestExpenses} />
-                )}
+                <RecentExpenses
+                  expenses={initialLatestExpenses}
+                  onSuccess={handleSuccess}
+                />
               </CardContent>
             </Card>
           </div>

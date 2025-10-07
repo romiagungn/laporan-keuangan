@@ -5,13 +5,23 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { fetchExpensesByCategory } from "@/lib/actions";
+import { fetchExpensesByCategory, getSpendingInsight } from "@/lib/actions";
 import { CategoryChart } from "@/components/charts/category-chart";
+import { InsightCard } from "@/components/shareds/insight-card";
 
 export const dynamic = "force-dynamic";
 
 export default async function ReportsPage() {
-  const data = await fetchExpensesByCategory({});
+  const now = new Date();
+  const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+  const categoryData = await fetchExpensesByCategory({
+    from: firstDayOfMonth.toISOString().split("T")[0],
+    to: lastDayOfMonth.toISOString().split("T")[0],
+  });
+
+  const insightData = await getSpendingInsight("bulanan");
 
   return (
     <div className="flex-1 space-y-4">
@@ -29,30 +39,18 @@ export default async function ReportsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="pl-2">
-            {data.length > 0 ? (
-              <CategoryChart data={data} />
+            {categoryData.length > 0 ? (
+              <CategoryChart data={categoryData} chartType="pie" />
             ) : (
-              <p className="text-sm text-muted-foreground p-8 text-center">
-                Belum ada data untuk ditampilkan.
-              </p>
+              <div className="h-[350px] w-full flex items-center justify-center bg-muted/50 rounded-lg">
+                <p className="text-sm text-muted-foreground">
+                  Belum ada data untuk ditampilkan.
+                </p>
+              </div>
             )}
           </CardContent>
         </Card>
-        <Card className="col-span-3">
-          <CardHeader>
-            <CardTitle>Insight (Segera Hadir)</CardTitle>
-            <CardDescription>
-              Analisis otomatis pengeluaran Anda.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[350px] w-full flex items-center justify-center bg-muted/50 rounded-lg">
-              <p className="text-sm text-muted-foreground">
-                Fitur insight akan tersedia di sini.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+        <InsightCard isLoading={false} insight={insightData} />
       </div>
     </div>
   );

@@ -1,11 +1,13 @@
 "use client";
 
+"use client";
+
 import { useEffect, useState } from "react";
 import { useActionState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { id as indonesiaLocale } from "date-fns/locale";
 
@@ -94,6 +96,10 @@ export function ExpenseForm({ expense, children, onSuccess }: ExpenseFormProps) 
       description: isEditMode ? expense.description || "" : "",
     },
   });
+
+  const {
+    formState: { isSubmitting },
+  } = form;
 
   const updateExpenseWithId = isEditMode
     ? updateExpense.bind(null, expense.id)
@@ -252,6 +258,7 @@ export function ExpenseForm({ expense, children, onSuccess }: ExpenseFormProps) 
                         mode="single"
                         selected={field.value}
                         onSelect={field.onChange}
+                        disabled={(date) => date > new Date()}
                         initialFocus
                       />
                     </PopoverContent>
@@ -274,8 +281,15 @@ export function ExpenseForm({ expense, children, onSuccess }: ExpenseFormProps) 
               )}
             />
             <DialogFooter>
-              <Button type="submit" className="w-full">
-                Simpan
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Menyimpan...
+                  </>
+                ) : (
+                  "Simpan"
+                )}
               </Button>
             </DialogFooter>
           </form>

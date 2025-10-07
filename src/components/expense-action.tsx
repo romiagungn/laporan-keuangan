@@ -46,7 +46,12 @@ function DeleteButton() {
   );
 }
 
-export function ExpenseActions({ expense }: { expense: Expense }) {
+interface ExpenseActionsProps {
+  expense: Expense;
+  onSuccess: () => void;
+}
+
+export function ExpenseActions({ expense, onSuccess }: ExpenseActionsProps) {
   const { toast } = useToast();
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
@@ -61,6 +66,7 @@ export function ExpenseActions({ expense }: { expense: Expense }) {
         title: "Berhasil!",
         description: result.message,
       });
+      onSuccess(); // Refresh data on successful delete
     } else {
       toast({
         title: "Gagal Menghapus",
@@ -68,6 +74,11 @@ export function ExpenseActions({ expense }: { expense: Expense }) {
         variant: "destructive",
       });
     }
+  };
+
+  const handleSuccess = () => {
+    setDropdownOpen(false);
+    onSuccess();
   };
 
   return (
@@ -84,7 +95,7 @@ export function ExpenseActions({ expense }: { expense: Expense }) {
           <DropdownMenuSeparator />
           <ExpenseForm
             expense={expense}
-            onSuccess={() => setDropdownOpen(false)}
+            onSuccess={handleSuccess}
           >
             <DropdownMenuItem
               onSelect={(e) => {

@@ -319,6 +319,117 @@ export async function getUniqueCategories() {
   }
 }
 
+export type TimeRange = "harian" | "mingguan" | "bulanan" | "tahunan";
+
+export async function getChartData(timeRange: TimeRange) {
+  const now = new Date();
+  let fromDate, toDate: Date;
+
+  switch (timeRange) {
+    case "harian":
+      fromDate = new Date(now.setHours(0, 0, 0, 0));
+      toDate = new Date(now.setHours(23, 59, 59, 999));
+      break;
+    case "mingguan":
+      const firstDayOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
+      firstDayOfWeek.setHours(0, 0, 0, 0);
+      fromDate = firstDayOfWeek;
+      toDate = new Date(firstDayOfWeek);
+      toDate.setDate(toDate.getDate() + 6);
+      toDate.setHours(23, 59, 59, 999);
+      break;
+    case "bulanan":
+      fromDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      toDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+      break;
+    case "tahunan":
+      fromDate = new Date(now.getFullYear(), 0, 1);
+      toDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+      break;
+  }
+
+  return fetchExpensesByCategory({
+    from: fromDate.toISOString().split("T")[0],
+    to: toDate.toISOString().split("T")[0],
+  });
+}
+
+export async function getSpendingInsight(timeRange: TimeRange) {
+  const now = new Date();
+  let fromDate, toDate, prevFromDate, prevToDate: Date;
+
+  switch (timeRange) {
+    case "harian":
+      fromDate = new Date(now.setHours(0, 0, 0, 0));
+      toDate = new Date(now.setHours(23, 59, 59, 999));
+      prevFromDate = new Date(new Date().setDate(now.getDate() - 1));
+      prevFromDate.setHours(0, 0, 0, 0);
+      prevToDate = new Date(new Date().setDate(now.getDate() - 1));
+      prevToDate.setHours(23, 59, 59, 999);
+      break;
+    case "mingguan":
+      const firstDayOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
+      firstDayOfWeek.setHours(0, 0, 0, 0);
+      fromDate = firstDayOfWeek;
+      toDate = new Date(firstDayOfWeek);
+      toDate.setDate(toDate.getDate() + 6);
+      toDate.setHours(23, 59, 59, 999);
+
+      prevFromDate = new Date(firstDayOfWeek);
+      prevFromDate.setDate(prevFromDate.getDate() - 7);
+      prevToDate = new Date(firstDayOfWeek);
+      prevToDate.setDate(prevToDate.getDate() - 1);
+      prevToDate.setHours(23, 59, 59, 999);
+      break;
+    case "bulanan":
+      fromDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      toDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+      prevFromDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      prevToDate = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+      break;
+    case "tahunan":
+      fromDate = new Date(now.getFullYear(), 0, 1);
+      toDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+      prevFromDate = new Date(now.getFullYear() - 1, 0, 1);
+      prevToDate = new Date(now.getFullYear() - 1, 11, 31, 23, 59, 59, 999);
+      break;
+  }
+
+  const [currentPeriodStats, previousPeriodStats, topCategoryData] = await Promise.all([
+    fetchSummaryStatistics({
+      from: fromDate.toISOString().split("T")[0],
+      to: toDate.toISOString().split("T")[0],
+    }),
+    fetchSummaryStatistics({
+      from: prevFromDate.toISOString().split("T")[0],
+      to: prevToDate.toISOString().split("T")[0],
+    }),
+    fetchExpensesByCategory({
+      from: fromDate.toISOString().split("T")[0],
+      to: toDate.toISOString().split("T")[0],
+    }),
+  ]);
+
+  const { total: currentTotal } = currentPeriodStats;
+  const { total: previousTotal } = previousPeriodStats;
+
+  let percentageChange = 0;
+  if (previousTotal > 0) {
+    percentageChange = ((currentTotal - previousTotal) / previousTotal) * 100;
+  } else if (currentTotal > 0) {
+    percentageChange = 100; // If previous was 0 and current is > 0, it's a 100% increase
+  }
+
+  const topCategory = topCategoryData.length > 0 ? topCategoryData[0].category : null;
+
+  return {
+    percentageChange: Math.round(percentageChange),
+    topCategory,
+    currentTotal,
+  };
+}
+
+
 // =================================================================
 // BULK & OTHER ACTIONS
 // =================================================================
