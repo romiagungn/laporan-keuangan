@@ -106,6 +106,7 @@ function RecentExpenses({
 }
 
 interface DashboardClientProps {
+  userName: string;
   initialLatestExpenses: Expense[];
   summaryData: {
     todayTotal: number;
@@ -117,6 +118,7 @@ interface DashboardClientProps {
 }
 
 export function DashboardClient({
+  userName,
   initialLatestExpenses,
   summaryData,
   categorySummary,
@@ -152,7 +154,12 @@ export function DashboardClient({
   return (
     <div className="flex-1 space-y-4">
       <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+          <p className="text-muted-foreground">
+            Welcome {userName}, Here’s a summary of your expenses.
+          </p>
+        </div>
         <div className="flex items-center space-x-2">
           <ExportButton />
           <ExpenseImporter />

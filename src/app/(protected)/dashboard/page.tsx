@@ -4,8 +4,15 @@ import {
   fetchExpensesByCategory,
 } from "@/lib/actions";
 import { DashboardClient } from "@/components/dashboard-client";
+import { getUserSession } from "@/lib/session";
+import { redirect } from "next/navigation";
 
 export default async function DashboardPage() {
+  const session = await getUserSession();
+  if (!session) {
+    redirect("/login");
+  }
+
   const summaryData = await fetchDashboardSummary();
   const latestExpenses = await fetchFilteredExpenses({});
 
@@ -18,12 +25,9 @@ export default async function DashboardPage() {
     to: lastDayOfMonth.toISOString().split("T")[0],
   });
 
-  console.log('summaryData =>', summaryData)
-  console.log('latestExpenses =>', latestExpenses)
-  console.log('categorySummary =>', categorySummary)
-
   return (
     <DashboardClient
+      userName={session.name}
       summaryData={summaryData}
       initialLatestExpenses={latestExpenses.slice(0, 5)}
       categorySummary={categorySummary}
