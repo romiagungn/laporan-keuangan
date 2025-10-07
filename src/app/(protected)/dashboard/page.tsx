@@ -18,6 +18,10 @@ export default async function DashboardPage() {
     to: lastDayOfMonth.toISOString().split("T")[0],
   });
 
+  console.log('summaryData =>', summaryData)
+  console.log('latestExpenses =>', latestExpenses)
+  console.log('categorySummary =>', categorySummary)
+
   return (
     <DashboardClient
       summaryData={summaryData}

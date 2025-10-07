@@ -32,10 +32,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ExpenseForm } from "@/components/expense-form";
 import { ExpenseActions } from "@/components/expense-action";
 import { ExpenseImporter } from "@/components/expense-importer";
-import { fetchFilteredExpenses } from "@/lib/actions";
 import type { Expense } from "@/lib/definitions";
 import { ExportButton } from "@/components/export-button";
 import { useRouter } from "next/navigation";
+
+import { UserCircle2 } from "lucide-react";
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("id-ID", {
@@ -76,9 +77,15 @@ function RecentExpenses({
           <TableRow key={expense.id}>
             <TableCell>
               <div className="font-medium">{expense.category}</div>
-              <div className="text-sm text-muted-foreground truncate">
+              <div className="text-sm text-muted-foreground truncate mb-1">
                 {expense.description || "Tanpa deskripsi"}
               </div>
+              {expense.created_by && (
+                <div className="flex items-center text-xs text-muted-foreground">
+                  <UserCircle2 className="h-3 w-3 mr-1" />
+                  <span>{expense.created_by}</span>
+                </div>
+              )}
             </TableCell>
             <TableCell className="text-right">
               <div className="font-semibold">
@@ -131,13 +138,12 @@ export function DashboardClient({
         setChartData(data);
       } catch (error) {
         console.error("Failed to fetch chart data:", error);
-        setChartData([]); // Clear data on error
+        setChartData([]);
       } finally {
         setIsChartLoading(false);
       }
     };
 
-    // Initial data is already passed for 'bulanan', so no need to fetch again on mount
     if (timeRange !== "bulanan") {
       fetchData();
     }

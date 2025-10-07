@@ -7,6 +7,7 @@ export type Expense = {
   amount: number;
   payment_method?: string | null;
   created_at: string;
+  created_by?: string | null;
 };
 
 export type User = {

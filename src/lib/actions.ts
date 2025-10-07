@@ -24,7 +24,7 @@ async function getUserIdOrThrow() {
   if (!session?.userId) {
     throw new Error("Otentikasi diperlukan.");
   }
-  return session.userId;
+  return session;
 }
 
 const ExpenseSchema = z.object({
@@ -48,9 +48,8 @@ const UpdateExpense = ExpenseSchema;
 
 export async function createExpense(prevState: any, formData: FormData) {
   try {
-    const userId = await getUserIdOrThrow();
-
-    console.log("formData =>", formData);
+    const session = await getUserIdOrThrow();
+    const { userId, name: created_by } = session;
 
     const validatedFields = CreateExpense.safeParse({
       amount: formData.get("amount"),
@@ -59,8 +58,6 @@ export async function createExpense(prevState: any, formData: FormData) {
       date: new Date(formData.get("date") as string),
       description: formData.get("description"),
     });
-
-    console.log("validatedFields =>", validatedFields);
 
     if (!validatedFields.success) {
       return {
@@ -76,10 +73,18 @@ export async function createExpense(prevState: any, formData: FormData) {
 
     await db.query(
       `
-      INSERT INTO expenses (user_id, amount, category, payment_method, date, description)
-      VALUES ($1, $2, $3, $4, $5, $6)
+      INSERT INTO expenses (user_id, amount, category, payment_method, date, description, created_by)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
     `,
-      [userId, amount, category, payment_method, dateString, description],
+      [
+        userId,
+        amount,
+        category,
+        payment_method,
+        dateString,
+        description,
+        created_by,
+      ],
     );
   } catch (error) {
     return { message: "Database Error: Gagal Menambah Pengeluaran." };
@@ -95,7 +100,8 @@ export async function updateExpense(
   formData: FormData,
 ) {
   try {
-    const userId = await getUserIdOrThrow();
+    const session = await getUserIdOrThrow();
+    const { userId } = session;
 
     const validatedFields = UpdateExpense.safeParse({
       amount: formData.get("amount"),
@@ -133,7 +139,7 @@ export async function updateExpense(
 
 export async function deleteExpense(id: number) {
   try {
-    const userId = await getUserIdOrThrow();
+    const { userId } = await getUserIdOrThrow();
     await db.query(`DELETE FROM expenses WHERE id = $1 AND user_id = $2`, [
       id,
       userId,
@@ -159,9 +165,9 @@ interface Filters {
   payment_method?: string;
 }
 
-// FUNGSI INI DITAMBAHKAN KEMBALI
 export async function fetchDashboardSummary() {
-  const userId = await getUserIdOrThrow();
+  const session = await getUserIdOrThrow();
+  const { userId, name: created_by } = session;
   try {
     const todayPromise = db.query(
       `SELECT SUM(amount) FROM expenses WHERE user_id = $1 AND date = CURRENT_DATE`,
@@ -203,7 +209,8 @@ export async function fetchFilteredExpenses(
   filters: Filters,
 ): Promise<Expense[]> {
   try {
-    const userId = await getUserIdOrThrow();
+    const session = await getUserIdOrThrow();
+    const { userId, name: created_by } = session;
     let query = `SELECT * FROM expenses WHERE user_id = $1`;
     const params: (string | number)[] = [userId];
 
@@ -236,7 +243,8 @@ export async function fetchFilteredExpenses(
 
 export async function fetchSummaryStatistics(filters: Filters) {
   try {
-    const userId = await getUserIdOrThrow();
+    const session = await getUserIdOrThrow();
+    const { userId, name: created_by } = session;
 
     let baseQuery = `SELECT SUM(amount) as total FROM expenses WHERE user_id = $1`;
     const params: (string | number)[] = [userId];
@@ -271,7 +279,8 @@ export async function fetchSummaryStatistics(filters: Filters) {
 
 export async function fetchExpensesByCategory(filters: Filters) {
   try {
-    const userId = await getUserIdOrThrow();
+    const session = await getUserIdOrThrow();
+    const { userId, name: created_by } = session;
     let query = `SELECT category, SUM(amount) as total FROM expenses WHERE user_id = $1`;
     const params: (string | number)[] = [userId];
 
@@ -307,7 +316,8 @@ export async function fetchExpensesByCategory(filters: Filters) {
 
 export async function getUniqueCategories() {
   try {
-    const userId = await getUserIdOrThrow();
+    const session = await getUserIdOrThrow();
+    const { userId, name: created_by } = session;
     const { rows } = await db.query(
       `SELECT DISTINCT category FROM expenses WHERE user_id = $1 ORDER BY category`,
       [userId],
@@ -331,7 +341,9 @@ export async function getChartData(timeRange: TimeRange) {
       toDate = new Date(now.setHours(23, 59, 59, 999));
       break;
     case "mingguan":
-      const firstDayOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
+      const firstDayOfWeek = new Date(
+        now.setDate(now.getDate() - now.getDay()),
+      );
       firstDayOfWeek.setHours(0, 0, 0, 0);
       fromDate = firstDayOfWeek;
       toDate = new Date(firstDayOfWeek);
@@ -340,7 +352,15 @@ export async function getChartData(timeRange: TimeRange) {
       break;
     case "bulanan":
       fromDate = new Date(now.getFullYear(), now.getMonth(), 1);
-      toDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+      toDate = new Date(
+        now.getFullYear(),
+        now.getMonth() + 1,
+        0,
+        23,
+        59,
+        59,
+        999,
+      );
       break;
     case "tahunan":
       fromDate = new Date(now.getFullYear(), 0, 1);
@@ -368,7 +388,9 @@ export async function getSpendingInsight(timeRange: TimeRange) {
       prevToDate.setHours(23, 59, 59, 999);
       break;
     case "mingguan":
-      const firstDayOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
+      const firstDayOfWeek = new Date(
+        now.setDate(now.getDate() - now.getDay()),
+      );
       firstDayOfWeek.setHours(0, 0, 0, 0);
       fromDate = firstDayOfWeek;
       toDate = new Date(firstDayOfWeek);
@@ -383,9 +405,25 @@ export async function getSpendingInsight(timeRange: TimeRange) {
       break;
     case "bulanan":
       fromDate = new Date(now.getFullYear(), now.getMonth(), 1);
-      toDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+      toDate = new Date(
+        now.getFullYear(),
+        now.getMonth() + 1,
+        0,
+        23,
+        59,
+        59,
+        999,
+      );
       prevFromDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      prevToDate = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+      prevToDate = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        0,
+        23,
+        59,
+        59,
+        999,
+      );
       break;
     case "tahunan":
       fromDate = new Date(now.getFullYear(), 0, 1);
@@ -395,20 +433,21 @@ export async function getSpendingInsight(timeRange: TimeRange) {
       break;
   }
 
-  const [currentPeriodStats, previousPeriodStats, topCategoryData] = await Promise.all([
-    fetchSummaryStatistics({
-      from: fromDate.toISOString().split("T")[0],
-      to: toDate.toISOString().split("T")[0],
-    }),
-    fetchSummaryStatistics({
-      from: prevFromDate.toISOString().split("T")[0],
-      to: prevToDate.toISOString().split("T")[0],
-    }),
-    fetchExpensesByCategory({
-      from: fromDate.toISOString().split("T")[0],
-      to: toDate.toISOString().split("T")[0],
-    }),
-  ]);
+  const [currentPeriodStats, previousPeriodStats, topCategoryData] =
+    await Promise.all([
+      fetchSummaryStatistics({
+        from: fromDate.toISOString().split("T")[0],
+        to: toDate.toISOString().split("T")[0],
+      }),
+      fetchSummaryStatistics({
+        from: prevFromDate.toISOString().split("T")[0],
+        to: prevToDate.toISOString().split("T")[0],
+      }),
+      fetchExpensesByCategory({
+        from: fromDate.toISOString().split("T")[0],
+        to: toDate.toISOString().split("T")[0],
+      }),
+    ]);
 
   const { total: currentTotal } = currentPeriodStats;
   const { total: previousTotal } = previousPeriodStats;
@@ -420,7 +459,8 @@ export async function getSpendingInsight(timeRange: TimeRange) {
     percentageChange = 100; // If previous was 0 and current is > 0, it's a 100% increase
   }
 
-  const topCategory = topCategoryData.length > 0 ? topCategoryData[0].category : null;
+  const topCategory =
+    topCategoryData.length > 0 ? topCategoryData[0].category : null;
 
   return {
     percentageChange: Math.round(percentageChange),
@@ -428,7 +468,6 @@ export async function getSpendingInsight(timeRange: TimeRange) {
     currentTotal,
   };
 }
-
 
 // =================================================================
 // BULK & OTHER ACTIONS
@@ -438,7 +477,8 @@ export async function fetchAllExpenses(): Promise<
   Omit<Expense, "user_id" | "created_at">[]
 > {
   try {
-    const userId = await getUserIdOrThrow();
+    const session = await getUserIdOrThrow();
+    const { userId, name: created_by } = session;
     const { rows } = await db.query(
       `
       SELECT id, date, category, amount, payment_method, description
@@ -456,7 +496,8 @@ export async function fetchAllExpenses(): Promise<
 }
 
 export async function importExpenses(fileContent: string, fileType: string) {
-  const userId = await getUserIdOrThrow();
+  const session = await getUserIdOrThrow();
+  const { userId, name: created_by } = session;
   const base64Data = fileContent.split(",")[1];
   const buffer = Buffer.from(base64Data, "base64");
   let rows: any[];
