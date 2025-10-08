@@ -4,7 +4,8 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { categories } from "../schema";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, inArray } from "drizzle-orm";
+import { getFamilyUserIdsOrThrow } from "./family.actions";
 import { getUserSession } from "@/lib/session";
 
 async function getUserIdOrThrow() {
@@ -139,9 +140,9 @@ export async function deleteCategory(id: number) {
 export async function getCategories() {
   console.log("--- getCategories Request ---");
   try {
-    const { userId } = await getUserIdOrThrow();
+    const userIds = await getFamilyUserIdsOrThrow();
     const response = await db.query.categories.findMany({
-      where: eq(categories.userId, parseInt(userId)),
+      where: inArray(categories.userId, userIds),
       orderBy: [desc(categories.name)],
     });
     console.log("--- getCategories Response ---", response);

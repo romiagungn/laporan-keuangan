@@ -5,7 +5,8 @@ import { revalidatePath } from "next/cache";
 import { getUserSession } from "@/lib/session";
 import { db } from "@/lib/db";
 import { budgets, categories, expenses } from "../schema";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, sql, inArray } from "drizzle-orm";
+import { getFamilyUserIdsOrThrow } from "./family.actions";
 
 async function getUserIdOrThrow() {
   const session = await getUserSession();
@@ -96,8 +97,7 @@ export async function createBudget(prevState: any, formData: FormData) {
 export async function getBudgetsWithProgress() {
   console.log("--- getBudgetsWithProgress Request ---");
   try {
-    const session = await getUserIdOrThrow();
-    const { userId } = session;
+    const userIds = await getFamilyUserIdsOrThrow();
 
     const currentMonth = new Date().getMonth() + 1;
     const currentYear = new Date().getFullYear();
@@ -124,7 +124,7 @@ export async function getBudgetsWithProgress() {
       )
       .where(
         and(
-          eq(budgets.userId, parseInt(userId)),
+          inArray(budgets.userId, userIds),
           eq(budgets.month, currentMonth),
           eq(budgets.year, currentYear),
         ),

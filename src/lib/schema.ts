@@ -11,6 +11,12 @@ import {
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
+export const families = pgTable("families", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const users = pgTable(
   "users",
   {
@@ -18,6 +24,7 @@ export const users = pgTable(
     name: text("name"),
     email: text("email").notNull(),
     password: text("password").notNull(),
+    familyId: integer("family_id").references(() => families.id),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (users) => {
@@ -113,12 +120,20 @@ export const recurringTransactions = pgTable("recurring_transactions", {
   createdBy: text("created_by"),
 });
 
-export const usersRelations = relations(users, ({ many }) => ({
+export const usersRelations = relations(users, ({ many, one }) => ({
   expenses: many(expenses),
   categories: many(categories),
   incomes: many(incomes),
   budgets: many(budgets),
   recurringTransactions: many(recurringTransactions),
+  family: one(families, {
+    fields: [users.familyId],
+    references: [families.id],
+  }),
+}));
+
+export const familiesRelations = relations(families, ({ many }) => ({
+  users: many(users),
 }));
 
 export const categoriesRelations = relations(categories, ({ one, many }) => ({

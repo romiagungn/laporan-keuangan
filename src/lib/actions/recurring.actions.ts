@@ -5,7 +5,8 @@ import { revalidatePath } from "next/cache";
 import { getUserSession } from "@/lib/session";
 import { db } from "@/lib/db";
 import { recurringTransactions, incomes, expenses } from "../schema";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, desc, sql, inArray } from "drizzle-orm";
+import { getFamilyUserIdsOrThrow } from "./family.actions";
 
 async function getUserIdOrThrow() {
   const session = await getUserSession();
@@ -109,10 +110,9 @@ export async function createRecurringTransaction(
 export async function getRecurringTransactions() {
   console.log("--- getRecurringTransactions Request ---");
   try {
-    const session = await getUserIdOrThrow();
-    const { userId } = session;
+    const userIds = await getFamilyUserIdsOrThrow();
     const transactions = await db.query.recurringTransactions.findMany({
-      where: eq(recurringTransactions.userId, parseInt(userId)),
+      where: inArray(recurringTransactions.userId, userIds),
       orderBy: [desc(recurringTransactions.startDate)],
     });
     const response = transactions.map((tx) => ({
@@ -162,14 +162,13 @@ export async function deleteRecurringTransaction(id: number) {
 export async function processRecurringTransactions() {
   console.log("--- processRecurringTransactions Request ---");
   try {
-    const session = await getUserIdOrThrow();
-    const { userId } = session;
+    const userIds = await getFamilyUserIdsOrThrow();
 
     const today = new Date().toISOString().split("T")[0];
 
     const dueTransactions = await db.query.recurringTransactions.findMany({
       where: and(
-        eq(recurringTransactions.userId, parseInt(userId)),
+        inArray(recurringTransactions.userId, userIds),
         sql`${recurringTransactions.nextDate} <= ${today}`,
       ),
     });
@@ -188,7 +187,7 @@ export async function processRecurringTransactions() {
       // Create income or expense
       if (tx.type === "income") {
         await db.insert(incomes).values({
-          userId: parseInt(userId),
+          userId: tx.userId,
           amount: tx.amount,
           source: tx.source || "Recurring",
           date: tx.nextDate,
@@ -196,7 +195,7 @@ export async function processRecurringTransactions() {
         });
       } else if (tx.type === "expense" && tx.categoryId) {
         await db.insert(expenses).values({
-          userId: parseInt(userId),
+          userId: tx.userId,
           amount: tx.amount,
           categoryId: tx.categoryId,
           date: tx.nextDate,

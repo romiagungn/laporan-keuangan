@@ -22,6 +22,7 @@ const RegisterSchema = z.object({
   name: z.string().min(3, { message: "Nama minimal 3 karakter." }),
   email: z.string().email({ message: "Harap masukkan email yang valid." }),
   password: z.string().min(6, { message: "Password minimal 6 karakter." }),
+  family: z.string().min(3, { message: "Nama keluarga minimal 3 karakter." }),
 });
 
 export function RegisterForm() {
@@ -36,6 +37,7 @@ export function RegisterForm() {
       name: "",
       email: "",
       password: "",
+      family: "",
     },
   });
 
@@ -130,6 +132,24 @@ export function RegisterForm() {
                   {...field}
                   type="password"
                   placeholder="••••••••"
+                  disabled={isPending}
+                  className="h-10"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="family"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Keluarga</FormLabel>
+              <FormControl>
+                <Input
+                  {...field}
+                  placeholder="Nama Keluarga"
                   disabled={isPending}
                   className="h-10"
                 />

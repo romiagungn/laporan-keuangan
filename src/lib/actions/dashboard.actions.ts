@@ -3,12 +3,11 @@
 import { getUserSession } from "@/lib/session";
 import { db } from "@/lib/db";
 import { expenses } from "../schema";
-import { eq, and, sql, gte, sum, lte } from "drizzle-orm";
+import { eq, and, sql, gte, sum, lte, inArray } from "drizzle-orm";
+
+import { getFamilyUserIdsOrThrow } from "./family.actions";
 import { getISOWeek, getISOWeekYear } from "date-fns";
-import {
-  fetchSummaryStatistics,
-  fetchExpensesByCategory,
-} from "./expense.actions";
+import { fetchExpensesByCategory, fetchSummaryStatistics } from "@/lib/actions/expense.actions";
 
 async function getUserIdOrThrow() {
   const session = await getUserSession();
@@ -20,7 +19,7 @@ async function getUserIdOrThrow() {
 
 export async function fetchDashboardSummary() {
   console.log("--- fetchDashboardSummary Request ---");
-  const { userId } = await getUserIdOrThrow();
+  const userIds = await getFamilyUserIdsOrThrow();
   try {
     const today = new Date().toISOString().split("T")[0];
     const startOfWeek = new Date();
@@ -34,15 +33,13 @@ export async function fetchDashboardSummary() {
     const todayPromise = db
       .select({ amount: sum(expenses.amount) })
       .from(expenses)
-      .where(
-        and(eq(expenses.userId, parseInt(userId)), eq(expenses.date, today)),
-      );
+      .where(and(inArray(expenses.userId, userIds), eq(expenses.date, today)));
     const thisWeekPromise = db
       .select({ amount: sum(expenses.amount) })
       .from(expenses)
       .where(
         and(
-          eq(expenses.userId, parseInt(userId)),
+          inArray(expenses.userId, userIds),
           gte(expenses.date, startOfWeekStr),
         ),
       );
@@ -51,7 +48,7 @@ export async function fetchDashboardSummary() {
       .from(expenses)
       .where(
         and(
-          eq(expenses.userId, parseInt(userId)),
+          inArray(expenses.userId, userIds),
           gte(expenses.date, startOfMonthStr),
         ),
       );
@@ -85,7 +82,7 @@ export type TimeRange = "harian" | "mingguan" | "bulanan" | "tahunan";
 
 export async function getChartData(timeRange: TimeRange) {
   console.log("--- getChartData Request ---", { timeRange });
-  const { userId } = await getUserIdOrThrow();
+  const userIds = await getFamilyUserIdsOrThrow();
   const now = new Date();
 
   let data: { category: string; total: number }[] = [];
@@ -105,7 +102,7 @@ export async function getChartData(timeRange: TimeRange) {
           .from(expenses)
           .where(
             and(
-              eq(expenses.userId, parseInt(userId)),
+              inArray(expenses.userId, userIds),
               gte(expenses.date, sevenDaysAgo.toISOString().split("T")[0]),
               lte(expenses.date, today.toISOString().split("T")[0])
             )
@@ -138,7 +135,7 @@ export async function getChartData(timeRange: TimeRange) {
           .from(expenses)
           .where(
             and(
-              eq(expenses.userId, parseInt(userId)),
+              inArray(expenses.userId, userIds),
               gte(expenses.date, fourWeeksAgo.toISOString().split("T")[0])
             )
           )
@@ -177,7 +174,7 @@ export async function getChartData(timeRange: TimeRange) {
           .from(expenses)
           .where(
             and(
-              eq(expenses.userId, parseInt(userId)),
+              inArray(expenses.userId, userIds),
               gte(expenses.date, twelveMonthsAgo.toISOString().split("T")[0])
             )
           )
@@ -203,7 +200,7 @@ export async function getChartData(timeRange: TimeRange) {
           .from(expenses)
           .where(
             and(
-              eq(expenses.userId, parseInt(userId)),
+              inArray(expenses.userId, userIds),
               gte(expenses.date, startOfYear.toISOString().split("T")[0])
             )
           );

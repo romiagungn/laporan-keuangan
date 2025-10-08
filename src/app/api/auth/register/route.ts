@@ -1,4 +1,6 @@
-import { sql } from "@vercel/postgres";
+import { db } from "@/lib/db";
+import { users, families } from "@/lib/schema";
+import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import bcryptjs from "bcryptjs";
 import { z } from "zod";
@@ -9,6 +11,7 @@ const UserSchema = z.object({
   password: z
     .string()
     .min(6, { message: "Password must be at least 6 characters." }),
+  family: z.string().min(3, { message: "Family name must be at least 3 characters." }),
 });
 
 export async function POST(request: Request) {
@@ -23,22 +26,39 @@ export async function POST(request: Request) {
       );
     }
 
-    const { name, email, password } = validation.data;
+    const { name, email, password, family } = validation.data;
 
-    const existingUser = await sql`SELECT * FROM users WHERE email = ${email}`;
-    if (existingUser.rows.length > 0) {
+    const existingUser = await db.query.users.findFirst({
+      where: eq(users.email, email),
+    });
+
+    if (existingUser) {
       return NextResponse.json(
         { error: "User with this email already exists." },
         { status: 409 },
       );
     }
 
+    let familyId: number;
+    const existingFamily = await db.query.families.findFirst({
+      where: eq(families.name, family),
+    });
+
+    if (existingFamily) {
+      familyId = existingFamily.id;
+    } else {
+      const newFamily = await db.insert(families).values({ name: family }).returning();
+      familyId = newFamily[0].id;
+    }
+
     const hashedPassword = await bcryptjs.hash(password, 10);
 
-    await sql`
-        INSERT INTO users (name, email, password)
-        VALUES (${name}, ${email}, ${hashedPassword})
-    `;
+    await db.insert(users).values({
+      name,
+      email,
+      password: hashedPassword,
+      familyId,
+    });
 
     return NextResponse.json(
       { message: "User created successfully." },

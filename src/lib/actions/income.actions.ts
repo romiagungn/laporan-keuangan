@@ -5,7 +5,8 @@ import { revalidatePath } from "next/cache";
 import { getUserSession } from "@/lib/session";
 import { db } from "@/lib/db";
 import { incomes } from "../schema";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, inArray } from "drizzle-orm";
+import { getFamilyUserIdsOrThrow } from "./family.actions";
 
 async function getUserIdOrThrow() {
   const session = await getUserSession();
@@ -82,11 +83,10 @@ export async function createIncome(prevState: any, formData: FormData) {
 export async function getIncomes() {
   console.log("--- getIncomes Request ---");
   try {
-    const session = await getUserIdOrThrow();
-    const { userId } = session;
+    const userIds = await getFamilyUserIdsOrThrow();
 
     const userIncomes = await db.query.incomes.findMany({
-      where: eq(incomes.userId, parseInt(userId)),
+      where: inArray(incomes.userId, userIds),
       orderBy: [desc(incomes.date)],
     });
 

@@ -6,7 +6,8 @@ import type { Expense } from "@/lib/definitions";
 import { getUserSession } from "@/lib/session";
 import { db } from "@/lib/db";
 import { expenses, categories } from "../schema";
-import { eq, and, desc, gte, lte, sum, getTableColumns } from "drizzle-orm";
+import { eq, and, desc, gte, lte, sum, getTableColumns, inArray } from "drizzle-orm";
+import { getFamilyUserIdsOrThrow } from "./family.actions";
 
 // type State = {
 //   errors?: {
@@ -168,14 +169,16 @@ interface Filters {
   categoryId?: number;
 }
 
+
+
 export async function fetchFilteredExpenses(
   filters: Filters,
 ): Promise<Expense[]> {
   console.log("--- fetchFilteredExpenses Request ---", filters);
   try {
-    const { userId } = await getUserIdOrThrow();
+    const userIds = await getFamilyUserIdsOrThrow();
 
-    const conditions = [eq(expenses.userId, parseInt(userId))];
+    const conditions = [inArray(expenses.userId, userIds)];
     if (filters.from) {
       conditions.push(gte(expenses.date, filters.from));
     }
@@ -219,9 +222,9 @@ export async function fetchFilteredExpenses(
 export async function fetchSummaryStatistics(filters: Filters) {
   console.log("--- fetchSummaryStatistics Request ---", filters);
   try {
-    const { userId } = await getUserIdOrThrow();
+    const userIds = await getFamilyUserIdsOrThrow();
 
-    const conditions = [eq(expenses.userId, parseInt(userId))];
+    const conditions = [inArray(expenses.userId, userIds)];
     if (filters.from) {
       conditions.push(gte(expenses.date, filters.from));
     }
@@ -251,9 +254,9 @@ export async function fetchSummaryStatistics(filters: Filters) {
 export async function fetchExpensesByCategory(filters: Filters) {
   console.log("--- fetchExpensesByCategory Request ---", filters);
   try {
-    const { userId } = await getUserIdOrThrow();
+    const userIds = await getFamilyUserIdsOrThrow();
     
-    const conditions = [eq(expenses.userId, parseInt(userId))];
+    const conditions = [inArray(expenses.userId, userIds)];
     if (filters.from) {
       conditions.push(gte(expenses.date, filters.from));
     }
