@@ -2,8 +2,9 @@ import {
   fetchDashboardSummary,
   fetchFilteredExpenses,
   fetchExpensesByCategory,
+  getCategories,
 } from "@/lib/actions";
-import { DashboardClient } from "@/components/dashboard-client";
+import { DashboardClient } from "./client/dashboard-client";
 import { getUserSession } from "@/lib/session";
 import { redirect } from "next/navigation";
 
@@ -15,6 +16,7 @@ export default async function DashboardPage() {
 
   const summaryData = await fetchDashboardSummary();
   const latestExpenses = await fetchFilteredExpenses({});
+  const categories = await getCategories();
 
   const now = new Date();
   const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -25,16 +27,13 @@ export default async function DashboardPage() {
     to: lastDayOfMonth.toISOString().split("T")[0],
   });
 
-  console.log(categorySummary);
-
-
-
   return (
     <DashboardClient
       userName={session.name}
       summaryData={summaryData}
       initialLatestExpenses={latestExpenses.slice(0, 5)}
       categorySummary={categorySummary}
+      categories={categories}
     />
   );
 }

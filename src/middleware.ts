@@ -17,7 +17,9 @@ export async function middleware(request: NextRequest) {
       try {
         await jwtVerify(tokenCookie, JWT_SECRET);
         return NextResponse.redirect(new URL("/dashboard", request.url));
-      } catch (error) {}
+      } catch (error) {
+        console.error("Database Error:", error);
+      }
     }
     return NextResponse.next();
   }
@@ -30,6 +32,7 @@ export async function middleware(request: NextRequest) {
     await jwtVerify(tokenCookie, JWT_SECRET);
     return NextResponse.next();
   } catch (error) {
+    console.error("Database Error:", error);
     const response = NextResponse.redirect(new URL("/login", request.url));
     response.cookies.delete("token");
     return response;

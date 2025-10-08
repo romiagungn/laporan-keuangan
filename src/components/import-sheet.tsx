@@ -154,6 +154,7 @@ export function ImportSheet({ isOpen, onClose }: ImportSheetProps) {
       resetState();
       onClose();
     } catch (error) {
+      console.error(error);
       toast({
         variant: "destructive",
         title: "Impor Gagal",

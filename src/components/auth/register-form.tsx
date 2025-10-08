@@ -66,6 +66,7 @@ export function RegisterForm() {
           });
         }
       } catch (e) {
+        console.error(e)
         setError("Tidak dapat terhubung ke server. Periksa koneksi Anda.");
         toast({
           variant: "destructive",

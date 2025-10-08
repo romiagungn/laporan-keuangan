@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { MoreHorizontal, Pencil, Trash2, Loader2 } from "lucide-react";
 import { useFormStatus } from "react-dom";
 
@@ -27,7 +27,7 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import { ExpenseForm } from "./expense-form";
 import { deleteExpense } from "@/lib/actions";
-import type { Expense } from "@/lib/definitions";
+import type { Category, Expense } from "@/lib/definitions";
 
 function DeleteButton() {
   const { pending } = useFormStatus();
@@ -49,9 +49,14 @@ function DeleteButton() {
 interface ExpenseActionsProps {
   expense: Expense;
   onSuccess: () => void;
+  categories: Category[];
 }
 
-export function ExpenseActions({ expense, onSuccess }: ExpenseActionsProps) {
+export function ExpenseActions({
+  expense,
+  onSuccess,
+  categories,
+}: ExpenseActionsProps) {
   const { toast } = useToast();
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
@@ -66,7 +71,7 @@ export function ExpenseActions({ expense, onSuccess }: ExpenseActionsProps) {
         title: "Berhasil!",
         description: result.message,
       });
-      onSuccess(); // Refresh data on successful delete
+      onSuccess();
     } else {
       toast({
         title: "Gagal Menghapus",
@@ -76,10 +81,10 @@ export function ExpenseActions({ expense, onSuccess }: ExpenseActionsProps) {
     }
   };
 
-  const handleSuccess = () => {
+  const handleSuccess = useCallback(() => {
     setDropdownOpen(false);
     onSuccess();
-  };
+  }, [onSuccess]);
 
   return (
     <AlertDialog>
@@ -96,6 +101,7 @@ export function ExpenseActions({ expense, onSuccess }: ExpenseActionsProps) {
           <ExpenseForm
             expense={expense}
             onSuccess={handleSuccess}
+            categories={categories}
           >
             <DropdownMenuItem
               onSelect={(e) => {

@@ -2,7 +2,7 @@
 
 import { CategoryChart } from "@/components/charts/category-chart";
 import { getChartData, TimeRange } from "@/lib/actions";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   DollarSign,
   Users2,
@@ -29,29 +29,24 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ExpenseForm } from "@/components/expense-form";
-import { ExpenseActions } from "@/components/expense-action";
-import { ExpenseImporter } from "@/components/expense-importer";
-import type { Expense } from "@/lib/definitions";
-import { ExportButton } from "@/components/export-button";
+import { ExpenseForm } from "./expense-form";
+import { ExpenseActions } from "./expense-action";
+import { ExpenseImporter } from "./expense-importer";
+import type { Expense, Category } from "@/lib/definitions";
+import { ExportButton } from "./export-button";
 import { useRouter } from "next/navigation";
 
 import { UserCircle2 } from "lucide-react";
-
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-  }).format(amount);
-};
+import { formatCurrency } from "@/lib/utils";
 
 function RecentExpenses({
   expenses,
   onSuccess,
+  categories,
 }: {
   expenses: Expense[];
   onSuccess: () => void;
+  categories: Category[];
 }) {
   if (expenses.length === 0) {
     return (
@@ -78,7 +73,7 @@ function RecentExpenses({
             <TableCell>
               <div className="font-medium">{expense.category}</div>
               <div className="text-sm text-muted-foreground truncate mb-1">
-                {expense.description || "Tanpa deskripsi"}
+                {expense.date || "Tanpa deskripsi"}
               </div>
               {expense.created_by && (
                 <div className="flex items-center text-xs text-muted-foreground">
@@ -96,7 +91,11 @@ function RecentExpenses({
               </Badge>
             </TableCell>
             <TableCell>
-              <ExpenseActions expense={expense} onSuccess={onSuccess} />
+              <ExpenseActions
+                expense={expense}
+                onSuccess={onSuccess}
+                categories={categories}
+              />
             </TableCell>
           </TableRow>
         ))}
@@ -115,6 +114,7 @@ interface DashboardClientProps {
     thisMonthCount: number;
   };
   categorySummary: { category: string; total: number }[];
+  categories: Category[];
 }
 
 export function DashboardClient({
@@ -122,15 +122,16 @@ export function DashboardClient({
   initialLatestExpenses,
   summaryData,
   categorySummary,
+  categories,
 }: DashboardClientProps) {
   const router = useRouter();
   const [timeRange, setTimeRange] = useState<TimeRange>("bulanan");
   const [chartData, setChartData] = useState(categorySummary);
   const [isChartLoading, setIsChartLoading] = useState(false);
 
-  const handleSuccess = () => {
+  const handleSuccess = useCallback(() => {
     router.refresh();
-  };
+  }, [router]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -146,9 +147,7 @@ export function DashboardClient({
       }
     };
 
-    if (timeRange !== "bulanan") {
-      fetchData();
-    }
+    fetchData();
   }, [timeRange]);
 
   return (
@@ -163,7 +162,7 @@ export function DashboardClient({
         <div className="flex items-center space-x-2">
           <ExportButton />
           <ExpenseImporter />
-          <ExpenseForm onSuccess={handleSuccess}>
+          <ExpenseForm onSuccess={handleSuccess} categories={categories}>
             <Button>
               <PlusCircle className="mr-2 h-4 w-4" />
               Tambah Pengeluaran
@@ -283,6 +282,7 @@ export function DashboardClient({
                 <RecentExpenses
                   expenses={initialLatestExpenses}
                   onSuccess={handleSuccess}
+                  categories={categories}
                 />
               </CardContent>
             </Card>

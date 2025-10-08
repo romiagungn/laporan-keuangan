@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { CircleUser, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,6 +26,7 @@ interface UserNavProps {
 
 export function Header({ session }: UserNavProps) {
   const router = useRouter();
+  const pathname = usePathname();
 
   const handleLogout = async () => {
     const response = await fetch("/api/auth/logout", {
@@ -41,6 +42,10 @@ export function Header({ session }: UserNavProps) {
     }
   };
 
+  const commonLinkClasses = "transition-colors hover:text-foreground";
+  const activeLinkClasses = "text-foreground font-bold";
+  const inactiveLinkClasses = "text-muted-foreground";
+
   return (
     <header className="sticky top-0 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6 z-50">
       <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
@@ -53,27 +58,61 @@ export function Header({ session }: UserNavProps) {
         </Link>
         <Link
           href="/dashboard"
-          className="text-foreground transition-colors hover:text-foreground font-bold"
+          className={`${commonLinkClasses} ${
+            pathname === "/dashboard" ? activeLinkClasses : inactiveLinkClasses
+          }`}
         >
           Dashboard
         </Link>
         <Link
           href="/reports"
-          className="text-muted-foreground transition-colors hover:text-foreground"
+          className={`${commonLinkClasses} ${
+            pathname === "/reports" ? activeLinkClasses : inactiveLinkClasses
+          }`}
         >
           Laporan
         </Link>
         <Link
+          href="/incomes"
+          className={`${commonLinkClasses} ${
+            pathname === "/incomes" ? activeLinkClasses : inactiveLinkClasses
+          }`}
+        >
+          Pemasukan
+        </Link>
+        <Link
+          href="/budgets"
+          className={`${commonLinkClasses} ${
+            pathname === "/budgets" ? activeLinkClasses : inactiveLinkClasses
+          }`}
+        >
+          Anggaran
+        </Link>
+        <Link
+          href="/categories"
+          className={`${commonLinkClasses} ${
+            pathname === "/categories" ? activeLinkClasses : inactiveLinkClasses
+          }`}
+        >
+          Kategori
+        </Link>
+        <Link
+          href="/recurring"
+          className={`${commonLinkClasses} ${
+            pathname === "/recurring" ? activeLinkClasses : inactiveLinkClasses
+          }`}
+        >
+          Transaksi Berulang
+        </Link>
+        <Link
           href="#"
-          className="text-muted-foreground transition-colors hover:text-foreground"
+          className={`${commonLinkClasses} ${inactiveLinkClasses}`}
         >
           Pengaturan
         </Link>
       </nav>
       <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
-        <div className="ml-auto flex-1 sm:flex-initial">
-          {/* Search bar can be added here if needed */}
-        </div>
+        <div className="ml-auto flex-1 sm:flex-initial"></div>
         <ThemeToggle />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

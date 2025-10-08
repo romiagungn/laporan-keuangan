@@ -1,7 +1,5 @@
 "use client";
 
-"use client";
-
 import { useEffect, useState } from "react";
 import { useActionState } from "react";
 import { useForm } from "react-hook-form";
@@ -43,13 +41,13 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { createExpense, updateExpense } from "@/lib/actions";
-import type { Expense } from "@/lib/definitions";
+import type { Category, Expense } from "@/lib/definitions";
 
 const FormSchema = z.object({
   amount: z.number().min(1, { message: "Please enter an amount." }),
-  category: z.string().min(1, { message: "Please select a category." }),
+  categoryId: z.number().min(1, { message: "Please select a category." }),
   payment_method: z
     .string()
     .min(1, { message: "Please select a payment method." }),
@@ -61,11 +59,11 @@ const FormSchema = z.object({
 
 type ExpenseFormValues = z.infer<typeof FormSchema>;
 
-// FIX: Add onSuccess to the interface
 interface ExpenseFormProps {
   expense?: Expense;
   children: React.ReactNode;
   onSuccess?: () => void;
+  categories: Category[];
 }
 
 type ActionState = {
@@ -80,54 +78,57 @@ const initialState: ActionState = {
   success: false,
 };
 
-// FIX: Accept onSuccess as a prop
-export function ExpenseForm({ expense, children, onSuccess }: ExpenseFormProps) {
+export function ExpenseForm({
+  expense,
+  children,
+  onSuccess,
+  categories,
+}: ExpenseFormProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const { toast } = useToast();
   const isEditMode = !!expense;
 
   const form = useForm<ExpenseFormValues>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
       amount: isEditMode ? Number(expense.amount) : NaN,
-      category: isEditMode ? expense.category : "",
-      payment_method: isEditMode ? expense.payment_method ?? "" : "",
+      categoryId: isEditMode
+        ? categories.find((c) => c.name === expense.category)?.id
+        : undefined,
+      payment_method: isEditMode ? (expense.payment_method ?? "") : "",
       date: isEditMode ? new Date(expense.date) : new Date(),
       description: isEditMode ? expense.description || "" : "",
     },
   });
 
-  const {
-    formState: { isSubmitting },
-  } = form;
+  useEffect(() => {
+    if (isEditMode && categories.length > 0) {
+      const categoryId = categories.find(
+        (c) => c.name === expense.category,
+      )?.id;
+      form.setValue("categoryId", categoryId || 0);
+    }
+  }, [categories, expense, form, isEditMode]);
 
   const updateExpenseWithId = isEditMode
     ? updateExpense.bind(null, expense.id)
     : null;
 
-  const [state, formAction] = useActionState<ActionState, FormData>(
+  const [state, formAction, isPending] = useActionState<ActionState, FormData>(
     // @ts-ignore
     isEditMode && updateExpenseWithId ? updateExpenseWithId : createExpense,
     initialState,
   );
 
   useEffect(() => {
-    if (state.success) {
-      toast({
-        title: isEditMode ? "Update Berhasil" : "Tambah Berhasil",
-        description: state.message,
-      });
+    if (state.success && isOpen) {
+      toast.success(state.message);
       setIsOpen(false);
       form.reset();
-      onSuccess?.(); // FIX: Call the onSuccess callback if it exists
+      onSuccess?.();
     } else if (state.message && !state.success) {
-      toast({
-        variant: "destructive",
-        title: isEditMode ? "Update Gagal" : "Tambah Gagal",
-        description: state.message,
-      });
+      toast.error(state.message);
     }
-  }, [state, isEditMode, toast, form, onSuccess]);
+  }, [state, isEditMode, form, onSuccess, isOpen]);
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -165,27 +166,29 @@ export function ExpenseForm({ expense, children, onSuccess }: ExpenseFormProps) 
             />
             <FormField
               control={form.control}
-              name="category"
+              name="categoryId"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Kategori</FormLabel>
-                  <input type="hidden" {...field} />
+                  <input type="hidden" name="categoryId" value={field.value || ''} />
                   <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
+                    onValueChange={(value) => field.onChange(parseInt(value))}
+                    defaultValue={field.value?.toString()}
                   >
                     <FormControl>
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full">
                         <SelectValue placeholder="Pilih kategori" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="Makanan">Makanan</SelectItem>
-                      <SelectItem value="Transportasi">Transportasi</SelectItem>
-                      <SelectItem value="Tagihan">Tagihan</SelectItem>
-                      <SelectItem value="Hiburan">Hiburan</SelectItem>
-                      <SelectItem value="Belanja">Belanja</SelectItem>
-                      <SelectItem value="Lainnya">Lainnya</SelectItem>
+                      {categories.map((category) => (
+                        <SelectItem
+                          key={category.id}
+                          value={category.id.toString()}
+                        >
+                          {category.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -198,13 +201,13 @@ export function ExpenseForm({ expense, children, onSuccess }: ExpenseFormProps) 
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Metode Pembayaran</FormLabel>
-                  <input type="hidden" {...field} />
+                  <input type="hidden" name="payment_method" value={field.value || ''} />
                   <Select
                     onValueChange={field.onChange}
                     defaultValue={field.value}
                   >
                     <FormControl>
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full">
                         <SelectValue placeholder="Pilih metode pembayaran" />
                       </SelectTrigger>
                     </FormControl>
@@ -281,8 +284,8 @@ export function ExpenseForm({ expense, children, onSuccess }: ExpenseFormProps) 
               )}
             />
             <DialogFooter>
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? (
+              <Button type="submit" className="w-full" disabled={isPending}>
+                {isPending ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Menyimpan...
@@ -298,4 +301,3 @@ export function ExpenseForm({ expense, children, onSuccess }: ExpenseFormProps) 
     </Dialog>
   );
 }
-

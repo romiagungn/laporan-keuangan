@@ -113,7 +113,7 @@ export function ExpenseImporter() {
             <FormField
               control={form.control}
               name="file"
-              render={({ field }) => (
+              render={() => (
                 <FormItem>
                   <FormLabel>File</FormLabel>
                   <FormControl>

@@ -3,13 +3,7 @@
 import { ArrowDown, ArrowUp, TrendingUp } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0,
-  }).format(amount);
-};
+
 
 interface InsightCardProps {
   isLoading: boolean;
