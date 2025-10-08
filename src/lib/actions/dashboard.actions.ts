@@ -19,6 +19,7 @@ async function getUserIdOrThrow() {
 }
 
 export async function fetchDashboardSummary() {
+  console.log("--- fetchDashboardSummary Request ---");
   const { userId } = await getUserIdOrThrow();
   try {
     const today = new Date().toISOString().split("T")[0];
