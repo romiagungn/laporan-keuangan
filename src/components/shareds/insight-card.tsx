@@ -54,7 +54,7 @@ export function InsightCard({ isLoading, insight }: InsightCardProps) {
   };
 
   return (
-    <Card className="col-span-3">
+    <Card className="lg:col-span-3">
       <CardHeader>
         <CardTitle>Insight Pengeluaran</CardTitle>
         <CardDescription>Analisis otomatis pengeluaran Anda.</CardDescription>

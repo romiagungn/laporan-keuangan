@@ -59,48 +59,63 @@ function RecentExpenses({
   }
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Detail</TableHead>
-          <TableHead className="text-right">Nominal</TableHead>
-          <TableHead className="w-[40px]"></TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {expenses.map((expense) => (
-          <TableRow key={expense.id}>
-            <TableCell>
-              <div className="font-medium">{expense.category}</div>
-              <div className="text-sm text-muted-foreground truncate mb-1">
-                {expense.date || "Tanpa deskripsi"}
-              </div>
-              {expense.created_by && (
-                <div className="flex items-center text-xs text-muted-foreground">
-                  <UserCircle2 className="h-3 w-3 mr-1" />
-                  <span>{expense.created_by}</span>
-                </div>
-              )}
-            </TableCell>
-            <TableCell className="text-right">
-              <div className="font-semibold">
-                {formatCurrency(Number(expense.amount))}
-              </div>
-              <Badge className="text-xs" variant="outline">
-                {expense.payment_method}
-              </Badge>
-            </TableCell>
-            <TableCell>
-              <ExpenseActions
-                expense={expense}
-                onSuccess={onSuccess}
-                categories={categories}
-              />
-            </TableCell>
+    <div className="overflow-x-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="hidden sm:table-cell">Detail</TableHead>
+            <TableHead className="sm:hidden">Info</TableHead>
+            <TableHead className="text-right">Nominal</TableHead>
+            <TableHead className="w-[40px]"></TableHead>
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          {expenses.map((expense) => (
+            <TableRow key={expense.id}>
+              <TableCell className="hidden sm:table-cell">
+                <div className="font-medium">{expense.category}</div>
+                <div className="text-sm text-muted-foreground truncate mb-1">
+                  {expense.date || "Tanpa deskripsi"}
+                </div>
+                {expense.created_by && (
+                  <div className="flex items-center text-xs text-muted-foreground">
+                    <UserCircle2 className="h-3 w-3 mr-1" />
+                    <span>{expense.created_by}</span>
+                  </div>
+                )}
+              </TableCell>
+              <TableCell className="sm:hidden">
+                <div className="font-medium">{expense.category}</div>
+                <div className="text-sm text-muted-foreground truncate mb-1">
+                  {expense.date || "Tanpa deskripsi"}
+                </div>
+                {expense.created_by && (
+                  <div className="flex items-center text-xs text-muted-foreground">
+                    <UserCircle2 className="h-3 w-3 mr-1" />
+                    <span>{expense.created_by}</span>
+                  </div>
+                )}
+              </TableCell>
+              <TableCell className="text-right">
+                <div className="font-semibold">
+                  {formatCurrency(Number(expense.amount))}
+                </div>
+                <Badge className="text-xs" variant="outline">
+                  {expense.payment_method}
+                </Badge>
+              </TableCell>
+              <TableCell>
+                <ExpenseActions
+                  expense={expense}
+                  onSuccess={onSuccess}
+                  categories={categories}
+                />
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
   );
 }
 
@@ -152,14 +167,14 @@ export function DashboardClient({
 
   return (
     <div className="flex-1 space-y-4">
-      <div className="flex items-center justify-between space-y-2">
-        <div>
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between space-y-2 md:space-y-0">
+        <div className="flex-1">
           <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
           <p className="text-muted-foreground">
             Welcome {userName}, Here’s a summary of your expenses.
           </p>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2 flex-wrap">
           <ExportButton />
           <ExpenseImporter />
           <ExpenseForm onSuccess={handleSuccess} categories={categories}>
@@ -181,7 +196,7 @@ export function DashboardClient({
           </TabsTrigger>
         </TabsList>
         <TabsContent value="overview" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
@@ -235,11 +250,11 @@ export function DashboardClient({
               </CardContent>
             </Card>
           </div>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-            <Card className="col-span-4">
-              <CardHeader className="flex items-center justify-between">
+          <div className="grid gap-4 grid-cols-1 lg:grid-cols-7">
+            <Card className="lg:col-span-4">
+              <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between">
                 <CardTitle>Ringkasan Kategori</CardTitle>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   {(
                     ["harian", "mingguan", "bulanan", "tahunan"] as TimeRange[]
                   ).map((range) => (
@@ -248,7 +263,7 @@ export function DashboardClient({
                       size="sm"
                       variant={timeRange === range ? "default" : "outline"}
                       onClick={() => setTimeRange(range)}
-                      className="capitalize"
+                      className="capitalize text-xs md:text-sm"
                     >
                       {range}
                     </Button>
@@ -273,7 +288,7 @@ export function DashboardClient({
                 )}
               </CardContent>
             </Card>
-            <Card className="col-span-3">
+            <Card className="lg:col-span-3">
               <CardHeader>
                 <CardTitle>Pengeluaran Terbaru</CardTitle>
                 <CardDescription>5 transaksi terakhir Anda.</CardDescription>

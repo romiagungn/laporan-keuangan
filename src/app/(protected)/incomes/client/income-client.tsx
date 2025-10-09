@@ -25,7 +25,7 @@ export function IncomeClient({ data }: IncomeClientProps) {
 
   return (
     <>
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between space-y-2 md:space-y-0">
         <h1 className="text-2xl font-bold">Pemasukan</h1>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>

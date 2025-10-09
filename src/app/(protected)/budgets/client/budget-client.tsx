@@ -32,7 +32,7 @@ export function BudgetClient({ budgets, categories }: BudgetClientProps) {
 
   return (
     <>
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between space-y-2 md:space-y-0">
         <h1 className="text-2xl font-bold">Anggaran Bulan Ini</h1>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
@@ -52,7 +52,7 @@ export function BudgetClient({ budgets, categories }: BudgetClientProps) {
         </Dialog>
       </div>
       {budgets.length > 0 ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
           {budgets.map((budget) => (
             <BudgetCard
               key={budget.id}

@@ -16,7 +16,7 @@ export const CategoryClient: React.FC<CategoryClientProps> = ({ data }) => {
 
   return (
     <>
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 space-y-2 md:space-y-0">
         <h1 className="text-2xl font-bold">Kategori</h1>
         <Button onClick={() => categorySheet.onOpen()}>
           <Plus className="mr-2 h-4 w-4" /> Tambah Kategori

@@ -40,7 +40,7 @@ export function RecurringClient({ data, categories }: RecurringClientProps) {
 
   return (
     <>
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between space-y-2 md:space-y-0">
         <h1 className="text-2xl font-bold">Transaksi Berulang</h1>
         <div className="flex items-center gap-2">
             <Button variant="outline" onClick={handleProcess} disabled={isProcessing}>

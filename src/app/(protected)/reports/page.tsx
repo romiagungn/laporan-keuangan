@@ -25,13 +25,13 @@ export default async function ReportsPage() {
 
   return (
     <div className="flex-1 space-y-4">
-      <div className="flex items-center justify-between space-y-2">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between space-y-2 md:space-y-0">
         <h2 className="text-3xl font-bold tracking-tight">
           Laporan & Statistik
         </h2>
       </div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4">
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-7">
+        <Card className="lg:col-span-4">
           <CardHeader>
             <CardTitle>Pengeluaran per Kategori</CardTitle>
             <CardDescription>

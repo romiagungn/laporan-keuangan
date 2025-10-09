@@ -27,7 +27,7 @@ export default async function ProfilePage() {
   return (
     <div className="flex-1 space-y-4">
       <h2 className="text-3xl font-bold tracking-tight">Profil Pengguna</h2>
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
         <Card className="md:col-span-1">
           <CardHeader className="flex flex-col items-center text-center">
             <Avatar className="h-24 w-24 mb-4">
