@@ -1,3 +1,5 @@
+import { financialGoals } from "@/lib/schema";
+
 export type Expense = {
   id: number;
   user_id: string;
@@ -47,3 +49,5 @@ export type RecurringTransaction = {
   endDate?: string | null;
   createdAt: string;
 };
+
+export type FinancialGoal = typeof financialGoals.$inferSelect;

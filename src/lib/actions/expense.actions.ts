@@ -185,8 +185,8 @@ export async function fetchFilteredExpenses(
     if (filters.to) {
       conditions.push(lte(expenses.date, filters.to));
     }
-    if (filters.categoryId) {
-      conditions.push(eq(expenses.categoryId, filters.categoryId));
+    if (filters.categoryIds && filters.categoryIds.length > 0) {
+      conditions.push(inArray(expenses.categoryId, filters.categoryIds));
     }
 
     const result = await db
@@ -231,8 +231,8 @@ export async function fetchSummaryStatistics(filters: Filters) {
     if (filters.to) {
       conditions.push(lte(expenses.date, filters.to));
     }
-    if (filters.categoryId) {
-        conditions.push(eq(expenses.categoryId, filters.categoryId));
+    if (filters.categoryIds && filters.categoryIds.length > 0) {
+        conditions.push(inArray(expenses.categoryId, filters.categoryIds));
     }
 
     const result = await db
@@ -251,11 +251,17 @@ export async function fetchSummaryStatistics(filters: Filters) {
   }
 }
 
+interface Filters {
+  from?: string;
+  to?: string;
+  categoryIds?: number[];
+}
+
 export async function fetchExpensesByCategory(filters: Filters) {
   console.log("--- fetchExpensesByCategory Request ---", filters);
   try {
     const userIds = await getFamilyUserIdsOrThrow();
-    
+
     const conditions = [inArray(expenses.userId, userIds)];
     if (filters.from) {
       conditions.push(gte(expenses.date, filters.from));
@@ -263,8 +269,8 @@ export async function fetchExpensesByCategory(filters: Filters) {
     if (filters.to) {
       conditions.push(lte(expenses.date, filters.to));
     }
-    if (filters.categoryId) {
-        conditions.push(eq(expenses.categoryId, filters.categoryId));
+    if (filters.categoryIds && filters.categoryIds.length > 0) {
+        conditions.push(inArray(expenses.categoryId, filters.categoryIds));
     }
 
     const result = await db

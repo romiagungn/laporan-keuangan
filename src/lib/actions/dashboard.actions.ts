@@ -9,13 +9,13 @@ import { getFamilyUserIdsOrThrow } from "./family.actions";
 import { getISOWeek, getISOWeekYear } from "date-fns";
 import { fetchExpensesByCategory, fetchSummaryStatistics } from "@/lib/actions/expense.actions";
 
-async function getUserIdOrThrow() {
-  const session = await getUserSession();
-  if (!session?.userId) {
-    throw new Error("Otentikasi diperlukan.");
-  }
-  return session;
-}
+// async function getUserIdOrThrow() {
+//   const session = await getUserSession();
+//   if (!session?.userId) {
+//     throw new Error("Otentikasi diperlukan.");
+//   }
+//   return session;
+// }
 
 export async function fetchDashboardSummary() {
   console.log("--- fetchDashboardSummary Request ---");
@@ -80,12 +80,17 @@ export async function fetchDashboardSummary() {
 
 export type TimeRange = "harian" | "mingguan" | "bulanan" | "tahunan";
 
-export async function getChartData(timeRange: TimeRange) {
-  console.log("--- getChartData Request ---", { timeRange });
+export async function getChartData(timeRange: TimeRange, filters?: { from?: string; to?: string; categoryIds?: number[] }) {
+  console.log("--- getChartData Request ---", { timeRange, filters });
   const userIds = await getFamilyUserIdsOrThrow();
   const now = new Date();
 
   let data: { category: string; total: number }[] = [];
+
+  const baseConditions = [inArray(expenses.userId, userIds)];
+  if (filters?.categoryIds && filters.categoryIds.length > 0) {
+    baseConditions.push(inArray(expenses.categoryId, filters.categoryIds));
+  }
 
   try {
     switch (timeRange) {
@@ -102,7 +107,7 @@ export async function getChartData(timeRange: TimeRange) {
           .from(expenses)
           .where(
             and(
-              inArray(expenses.userId, userIds),
+              ...baseConditions,
               gte(expenses.date, sevenDaysAgo.toISOString().split("T")[0]),
               lte(expenses.date, today.toISOString().split("T")[0])
             )
@@ -135,7 +140,7 @@ export async function getChartData(timeRange: TimeRange) {
           .from(expenses)
           .where(
             and(
-              inArray(expenses.userId, userIds),
+              ...baseConditions,
               gte(expenses.date, fourWeeksAgo.toISOString().split("T")[0])
             )
           )
@@ -174,7 +179,7 @@ export async function getChartData(timeRange: TimeRange) {
           .from(expenses)
           .where(
             and(
-              inArray(expenses.userId, userIds),
+              ...baseConditions,
               gte(expenses.date, twelveMonthsAgo.toISOString().split("T")[0])
             )
           )
@@ -200,7 +205,7 @@ export async function getChartData(timeRange: TimeRange) {
           .from(expenses)
           .where(
             and(
-              inArray(expenses.userId, userIds),
+              ...baseConditions,
               gte(expenses.date, startOfYear.toISOString().split("T")[0])
             )
           );
@@ -222,80 +227,95 @@ export async function getChartData(timeRange: TimeRange) {
   return data;
 }
 
-export async function getSpendingInsight(timeRange: TimeRange) {
-  console.log("--- getSpendingInsight Request ---", { timeRange });
+export async function getSpendingInsight(timeRange: TimeRange, filters?: { from?: string; to?: string; categoryIds?: number[] }) {
+  console.log("--- getSpendingInsight Request ---", { timeRange, filters });
   const now = new Date();
   let fromDate, toDate, prevFromDate, prevToDate: Date;
 
-  switch (timeRange) {
-    case "harian":
-      fromDate = new Date(now.setHours(0, 0, 0, 0));
-      toDate = new Date(now.setHours(23, 59, 59, 999));
-      prevFromDate = new Date(new Date().setDate(now.getDate() - 1));
-      prevFromDate.setHours(0, 0, 0, 0);
-      prevToDate = new Date(new Date().setDate(now.getDate() - 1));
-      prevToDate.setHours(23, 59, 59, 999);
-      break;
-    case "mingguan":
-      const firstDayOfWeek = new Date(
-        now.setDate(now.getDate() - now.getDay()),
-      );
-      firstDayOfWeek.setHours(0, 0, 0, 0);
-      fromDate = firstDayOfWeek;
-      toDate = new Date(firstDayOfWeek);
-      toDate.setDate(toDate.getDate() + 6);
-      toDate.setHours(23, 59, 59, 999);
+  // Use filters.from and filters.to if provided, otherwise calculate based on timeRange
+  if (filters?.from && filters?.to) {
+    fromDate = new Date(filters.from);
+    toDate = new Date(filters.to);
 
-      prevFromDate = new Date(firstDayOfWeek);
-      prevFromDate.setDate(prevFromDate.getDate() - 7);
-      prevToDate = new Date(firstDayOfWeek);
-      prevToDate.setDate(prevToDate.getDate() - 1);
-      prevToDate.setHours(23, 59, 59, 999);
-      break;
-    case "bulanan":
-      fromDate = new Date(now.getFullYear(), now.getMonth(), 1);
-      toDate = new Date(
-        now.getFullYear(),
-        now.getMonth() + 1,
-        0,
-        23,
-        59,
-        59,
-        999,
-      );
-      prevFromDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      prevToDate = new Date(
-        now.getFullYear(),
-        now.getMonth(),
-        0,
-        23,
-        59,
-        59,
-        999,
-      );
-      break;
-    case "tahunan":
-      fromDate = new Date(now.getFullYear(), 0, 1);
-      toDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
-      prevFromDate = new Date(now.getFullYear() - 1, 0, 1);
-      prevToDate = new Date(now.getFullYear() - 1, 11, 31, 23, 59, 59, 999);
-      break;
+    // For previous period, calculate based on the duration of the filtered period
+    const durationMs = toDate.getTime() - fromDate.getTime();
+    prevFromDate = new Date(fromDate.getTime() - durationMs - (1000 * 60 * 60 * 24)); // Subtract one day to get the day before 'from'
+    prevToDate = new Date(fromDate.getTime() - (1000 * 60 * 60 * 24)); // Subtract one day to get the day before 'from'
+
+  } else {
+    switch (timeRange) {
+      case "harian":
+        fromDate = new Date(now.setHours(0, 0, 0, 0));
+        toDate = new Date(now.setHours(23, 59, 59, 999));
+        prevFromDate = new Date(new Date().setDate(now.getDate() - 1));
+        prevFromDate.setHours(0, 0, 0, 0);
+        prevToDate = new Date(new Date().setDate(now.getDate() - 1));
+        prevToDate.setHours(23, 59, 59, 999);
+        break;
+      case "mingguan":
+        const firstDayOfWeek = new Date(
+          now.setDate(now.getDate() - now.getDay()),
+        );
+        firstDayOfWeek.setHours(0, 0, 0, 0);
+        fromDate = firstDayOfWeek;
+        toDate = new Date(firstDayOfWeek);
+        toDate.setDate(toDate.getDate() + 6);
+        toDate.setHours(23, 59, 59, 999);
+
+        prevFromDate = new Date(firstDayOfWeek);
+        prevFromDate.setDate(prevFromDate.getDate() - 7);
+        prevToDate = new Date(firstDayOfWeek);
+        prevToDate.setDate(prevToDate.getDate() - 1);
+        prevToDate.setHours(23, 59, 59, 999);
+        break;
+      case "bulanan":
+        fromDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        toDate = new Date(
+          now.getFullYear(),
+          now.getMonth() + 1,
+          0,
+          23,
+          59,
+          59,
+          999,
+        );
+        prevFromDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        prevToDate = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          0,
+          23,
+          59,
+          59,
+          999,
+        );
+        break;
+      case "tahunan":
+        fromDate = new Date(now.getFullYear(), 0, 1);
+        toDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+        prevFromDate = new Date(now.getFullYear() - 1, 0, 1);
+        prevToDate = new Date(now.getFullYear() - 1, 11, 31, 23, 59, 59, 999);
+        break;
+    }
   }
+
+  const commonFilters = {
+    from: fromDate.toISOString().split("T")[0],
+    to: toDate.toISOString().split("T")[0],
+    categoryIds: filters?.categoryIds,
+  };
+
+  const previousFilters = {
+    from: prevFromDate.toISOString().split("T")[0],
+    to: prevToDate.toISOString().split("T")[0],
+    categoryIds: filters?.categoryIds,
+  };
 
   const [currentPeriodStats, previousPeriodStats, topCategoryData] =
     await Promise.all([
-      fetchSummaryStatistics({
-        from: fromDate.toISOString().split("T")[0],
-        to: toDate.toISOString().split("T")[0],
-      }),
-      fetchSummaryStatistics({
-        from: prevFromDate.toISOString().split("T")[0],
-        to: prevToDate.toISOString().split("T")[0],
-      }),
-      fetchExpensesByCategory({
-        from: fromDate.toISOString().split("T")[0],
-        to: toDate.toISOString().split("T")[0],
-      }),
+      fetchSummaryStatistics(commonFilters),
+      fetchSummaryStatistics(previousFilters),
+      fetchExpensesByCategory(commonFilters),
     ]);
 
   const { total: currentTotal } = currentPeriodStats;

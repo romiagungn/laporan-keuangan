@@ -126,6 +126,7 @@ export const usersRelations = relations(users, ({ many, one }) => ({
   incomes: many(incomes),
   budgets: many(budgets),
   recurringTransactions: many(recurringTransactions),
+  financialGoals: many(financialGoals),
   family: one(families, {
     fields: [users.familyId],
     references: [families.id],
@@ -186,3 +187,25 @@ export const recurringTransactionsRelations = relations(
     }),
   }),
 );
+
+export const financialGoals = pgTable("financial_goals", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id),
+  name: varchar("name", { length: 256 }).notNull(),
+  targetAmount: decimal("target_amount", { precision: 12, scale: 2 }).notNull(),
+  currentAmount: decimal("current_amount", { precision: 12, scale: 2 })
+    .notNull()
+    .default("0"),
+  targetDate: date("target_date"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdBy: text("created_by"),
+});
+
+export const financialGoalsRelations = relations(financialGoals, ({ one }) => ({
+  user: one(users, {
+    fields: [financialGoals.userId],
+    references: [users.id],
+  }),
+}));

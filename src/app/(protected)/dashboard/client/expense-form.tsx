@@ -120,7 +120,11 @@ export function ExpenseForm({
   );
 
   useEffect(() => {
-    if (state.success && isOpen) {
+    if (state.message === null) {
+      return;
+    }
+
+    if (state.success) {
       toast.success(state.message);
       setIsOpen(false);
       form.reset();
@@ -128,7 +132,8 @@ export function ExpenseForm({
     } else if (state.message && !state.success) {
       toast.error(state.message);
     }
-  }, [state, isEditMode, form, onSuccess, isOpen]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state]);
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -170,7 +175,11 @@ export function ExpenseForm({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Kategori</FormLabel>
-                  <input type="hidden" name="categoryId" value={field.value || ''} />
+                  <input
+                    type="hidden"
+                    name="categoryId"
+                    value={field.value || ""}
+                  />
                   <Select
                     onValueChange={(value) => field.onChange(parseInt(value))}
                     defaultValue={field.value?.toString()}
@@ -201,7 +210,11 @@ export function ExpenseForm({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Metode Pembayaran</FormLabel>
-                  <input type="hidden" name="payment_method" value={field.value || ''} />
+                  <input
+                    type="hidden"
+                    name="payment_method"
+                    value={field.value || ""}
+                  />
                   <Select
                     onValueChange={field.onChange}
                     defaultValue={field.value}
@@ -228,13 +241,22 @@ export function ExpenseForm({
               render={({ field }) => (
                 <FormItem className="flex flex-col">
                   <FormLabel>Tanggal</FormLabel>
-                  {field.value && (
-                    <input
-                      type="hidden"
-                      name="date"
-                      value={field.value.toISOString()}
-                    />
-                  )}
+                  {field.value &&
+                    (() => {
+                      const localDate = field.value;
+                      const timezoneOffset =
+                        localDate.getTimezoneOffset() * 60000;
+                      const correctedDate = new Date(
+                        localDate.getTime() - timezoneOffset,
+                      );
+                      const dateString = correctedDate
+                        .toISOString()
+                        .split("T")[0];
+
+                      return (
+                        <input type="hidden" name="date" value={dateString} />
+                      );
+                    })()}
                   <Popover>
                     <PopoverTrigger asChild>
                       <FormControl>
