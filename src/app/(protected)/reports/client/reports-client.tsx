@@ -10,7 +10,9 @@ import { Filter } from "lucide-react";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { FilterSheet } from "./filter-sheet";
 
-interface ReportsClientProps {
+import { CustomReportsManager } from "./custom-reports-manager";
+
+interface ReportsClientProps: {
   initialCategoryData: any[];
   initialInsightData: any;
 }
@@ -37,24 +39,29 @@ export function ReportsClient({ initialCategoryData, initialInsightData }: Repor
         <h2 className="text-3xl font-bold tracking-tight">
           Laporan & Statistik
         </h2>
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button variant="outline">
-              <Filter className="mr-2 h-4 w-4" />
-              Filter
-            </Button>
-          </SheetTrigger>
-          <SheetContent>
-            <SheetHeader>
-              <SheetTitle>Filter Laporan</SheetTitle>
-              <SheetDescription>
-                Pilih kriteria untuk memfilter laporan Anda.
-              </SheetDescription>
-            </SheetHeader>
-            <FilterSheet onFilter={handleFilter} />
-          </SheetContent>
-        </Sheet>
+        <div className="flex items-center gap-2">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline">
+                <Filter className="mr-2 h-4 w-4" />
+                Filter
+              </Button>
+            </SheetTrigger>
+            <SheetContent>
+              <SheetHeader>
+                <SheetTitle>Filter Laporan</SheetTitle>
+                <SheetDescription>
+                  Pilih kriteria untuk memfilter laporan Anda.
+                </SheetDescription>
+              </SheetHeader>
+              <FilterSheet onFilter={handleFilter} />
+            </SheetContent>
+          </Sheet>
+        </div>
       </div>
+      
+      <CustomReportsManager />
+
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-7">
         <Card className="lg:col-span-4">
           <CardHeader>

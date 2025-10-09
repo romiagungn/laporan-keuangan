@@ -311,3 +311,46 @@ export async function fetchExpensesByCategory(filters: Filters) {
   }
 }
 
+export async function fetchAllExpenses(filters: Filters) {
+  console.log("--- fetchAllExpenses Request ---", filters);
+  try {
+    const userIds = await getFamilyUserIdsOrThrow();
+
+    const conditions = [inArray(expenses.userId, userIds)];
+    if (filters.from) {
+      conditions.push(gte(expenses.date, filters.from));
+    }
+    if (filters.to) {
+      conditions.push(lte(expenses.date, filters.to));
+    }
+    if (filters.categoryIds && filters.categoryIds.length > 0) {
+      conditions.push(inArray(expenses.categoryId, filters.categoryIds));
+    }
+
+    const expensesData = await db
+      .select({
+        ...getTableColumns(expenses),
+        categoryName: categories.name,
+      })
+      .from(expenses)
+      .leftJoin(categories, eq(expenses.categoryId, categories.id))
+      .where(and(...conditions))
+      .orderBy(desc(expenses.date), desc(expenses.createdAt));
+
+    const responseExpenses = expensesData.map((r) => ({
+      id: r.id,
+      date: r.date,
+      category: r.categoryName || "Uncategorized",
+      description: r.description,
+      amount: Number(r.amount),
+      payment_method: r.paymentMethod,
+    }));
+
+    console.log("--- fetchAllExpenses Response ---", responseExpenses);
+    return responseExpenses;
+  } catch (error) {
+    console.error("Database Error:", error);
+    throw new Error("Gagal mengambil semua data pengeluaran.");
+  }
+}
+

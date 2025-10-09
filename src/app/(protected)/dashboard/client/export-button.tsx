@@ -3,6 +3,7 @@
 import { useTransition } from "react";
 import Papa from "papaparse";
 import { Download } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
@@ -11,25 +12,34 @@ import { fetchAllExpenses } from "@/lib/actions";
 export function ExportButton() {
   const [isExporting, startTransition] = useTransition();
   const { toast } = useToast();
+  const searchParams = useSearchParams();
 
   const handleExport = async () => {
     startTransition(async () => {
       try {
-        const data = await fetchAllExpenses();
+        const filters = {
+          from: searchParams.get("from") || undefined,
+          to: searchParams.get("to") || undefined,
+          categoryIds: searchParams.getAll("categoryId").map(Number) || undefined,
+        };
+
+        const data = await fetchAllExpenses(filters);
 
         if (!data || data.length === 0) {
           toast({
             variant: "destructive",
             title: "Export Failed",
-            description: "No data available to export.",
+            description: "No data available to export for the selected filters.",
           });
           return;
         }
 
         const formattedData = data.map((item) => ({
-          ...item,
-          date: new Date(item.date).toISOString().split("T")[0],
-          amount: String(item.amount), // Convert amount to string for CSV
+          Tanggal: item.date,
+          Kategori: item.category,
+          Deskripsi: item.description,
+          Jumlah: item.amount,
+          "Metode Pembayaran": item.payment_method,
         }));
 
         const csv = Papa.unparse(formattedData);

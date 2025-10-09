@@ -8,12 +8,16 @@ import {
   date,
   uniqueIndex,
   decimal,
+  jsonb,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
 export const families = pgTable("families", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
+  ownerId: integer("owner_id")
+    .notNull()
+    .references(() => users.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -127,6 +131,7 @@ export const usersRelations = relations(users, ({ many, one }) => ({
   budgets: many(budgets),
   recurringTransactions: many(recurringTransactions),
   financialGoals: many(financialGoals),
+  customReports: many(customReports),
   family: one(families, {
     fields: [users.familyId],
     references: [families.id],
@@ -206,6 +211,23 @@ export const financialGoals = pgTable("financial_goals", {
 export const financialGoalsRelations = relations(financialGoals, ({ one }) => ({
   user: one(users, {
     fields: [financialGoals.userId],
+    references: [users.id],
+  }),
+}));
+
+export const customReports = pgTable("custom_reports", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 256 }).notNull(),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id),
+  filters: jsonb("filters").notNull().default('{}'),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const customReportsRelations = relations(customReports, ({ one }) => ({
+  user: one(users, {
+    fields: [customReports.userId],
     references: [users.id],
   }),
 }));

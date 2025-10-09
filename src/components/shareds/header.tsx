@@ -105,6 +105,14 @@ export function Header({ session }: UserNavProps) {
           Transaksi Berulang
         </Link>
         <Link
+          href="/family"
+          className={`${commonLinkClasses} ${
+            pathname === "/family" ? activeLinkClasses : inactiveLinkClasses
+          }`}
+        >
+          Keluarga
+        </Link>
+        <Link
           href="#"
           className={`${commonLinkClasses} ${inactiveLinkClasses}`}
         >
