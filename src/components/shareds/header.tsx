@@ -1,8 +1,13 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { CircleUser, Wallet } from "lucide-react";
+import { CircleUser, Menu, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,6 +51,17 @@ export function Header({ session }: UserNavProps) {
   const activeLinkClasses = "text-foreground font-bold";
   const inactiveLinkClasses = "text-muted-foreground";
 
+  const navLinks = [
+    { href: "/dashboard", label: "Dashboard" },
+    { href: "/reports", label: "Laporan" },
+    { href: "/incomes", label: "Pemasukan" },
+    { href: "/budgets", label: "Anggaran" },
+    { href: "/categories", label: "Kategori" },
+    { href: "/recurring", label: "Transaksi Berulang" },
+    { href: "/family", label: "Keluarga" },
+    // { href: "#", label: "Pengaturan" }, // Example for a disabled link
+  ];
+
   return (
     <header className="sticky top-0 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6 z-50">
       <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
@@ -56,69 +72,54 @@ export function Header({ session }: UserNavProps) {
           <Wallet className="h-6 w-6 text-primary" />
           <span className="sr-only">Rekap Pengeluaran</span>
         </Link>
-        <Link
-          href="/dashboard"
-          className={`${commonLinkClasses} ${
-            pathname === "/dashboard" ? activeLinkClasses : inactiveLinkClasses
-          }`}
-        >
-          Dashboard
-        </Link>
-        <Link
-          href="/reports"
-          className={`${commonLinkClasses} ${
-            pathname === "/reports" ? activeLinkClasses : inactiveLinkClasses
-          }`}
-        >
-          Laporan
-        </Link>
-        <Link
-          href="/incomes"
-          className={`${commonLinkClasses} ${
-            pathname === "/incomes" ? activeLinkClasses : inactiveLinkClasses
-          }`}
-        >
-          Pemasukan
-        </Link>
-        <Link
-          href="/budgets"
-          className={`${commonLinkClasses} ${
-            pathname === "/budgets" ? activeLinkClasses : inactiveLinkClasses
-          }`}
-        >
-          Anggaran
-        </Link>
-        <Link
-          href="/categories"
-          className={`${commonLinkClasses} ${
-            pathname === "/categories" ? activeLinkClasses : inactiveLinkClasses
-          }`}
-        >
-          Kategori
-        </Link>
-        <Link
-          href="/recurring"
-          className={`${commonLinkClasses} ${
-            pathname === "/recurring" ? activeLinkClasses : inactiveLinkClasses
-          }`}
-        >
-          Transaksi Berulang
-        </Link>
-        <Link
-          href="/family"
-          className={`${commonLinkClasses} ${
-            pathname === "/family" ? activeLinkClasses : inactiveLinkClasses
-          }`}
-        >
-          Keluarga
-        </Link>
-        <Link
-          href="#"
-          className={`${commonLinkClasses} ${inactiveLinkClasses}`}
-        >
-          Pengaturan
-        </Link>
+        {navLinks.map(link => (
+          <Link
+            key={link.href}
+            href={link.href}
+            className={`${commonLinkClasses} ${
+              pathname === link.href ? activeLinkClasses : inactiveLinkClasses
+            }`}
+          >
+            {link.label}
+          </Link>
+        ))}
       </nav>
+
+      <Sheet>
+        <SheetTrigger asChild>
+          <Button
+            variant="outline"
+            size="icon"
+            className="shrink-0 md:hidden"
+          >
+            <Menu className="h-5 w-5" />
+            <span className="sr-only">Buka menu navigasi</span>
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="left">
+          <nav className="grid gap-6 text-lg font-medium">
+            <Link
+              href="/dashboard"
+              className="flex items-center gap-2 text-lg font-semibold"
+            >
+              <Wallet className="h-6 w-6 text-primary" />
+              <span className="sr-only">Rekap Pengeluaran</span>
+            </Link>
+            {navLinks.map(link => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`${commonLinkClasses} ${
+                  pathname === link.href ? activeLinkClasses : inactiveLinkClasses
+                }`}
+              >
+                {link.label}
+              </Link>
+            ))}
+          </nav>
+        </SheetContent>
+      </Sheet>
+
       <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
         <div className="ml-auto flex-1 sm:flex-initial"></div>
         <ThemeToggle />
