@@ -31,7 +31,7 @@ export default async function DashboardPage() {
     <DashboardClient
       userName={session.name}
       summaryData={summaryData}
-      initialLatestExpenses={latestExpenses.slice(0, 5)}
+      initialLatestExpenses={latestExpenses.expenses.slice(0, 5)}
       categorySummary={categorySummary}
       categories={categories}
     />

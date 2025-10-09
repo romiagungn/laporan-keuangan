@@ -166,14 +166,14 @@ export async function deleteExpense(id: number) {
 interface Filters {
   from?: string;
   to?: string;
-  categoryId?: number;
+  categoryIds?: number[];
+  page?: number;
+  pageSize?: number;
 }
-
-
 
 export async function fetchFilteredExpenses(
   filters: Filters,
-): Promise<Expense[]> {
+): Promise<{ expenses: Expense[]; totalCount: number }> {
   console.log("--- fetchFilteredExpenses Request ---", filters);
   try {
     const userIds = await getFamilyUserIdsOrThrow();
@@ -189,18 +189,29 @@ export async function fetchFilteredExpenses(
       conditions.push(inArray(expenses.categoryId, filters.categoryIds));
     }
 
-    const result = await db
-      .select({
-        ...getTableColumns(expenses),
-        categoryName: categories.name,
-      })
-      .from(expenses)
-      .leftJoin(categories, eq(expenses.categoryId, categories.id))
-      .where(and(...conditions))
-      .orderBy(desc(expenses.date), desc(expenses.createdAt))
-      .limit(100);
+    const page = filters.page || 1;
+    const pageSize = filters.pageSize || 10;
+    const offset = (page - 1) * pageSize;
 
-    const response = result.map((r) => ({
+    const [expensesData, totalCountData] = await Promise.all([
+      db
+        .select({
+          ...getTableColumns(expenses),
+          categoryName: categories.name,
+        })
+        .from(expenses)
+        .leftJoin(categories, eq(expenses.categoryId, categories.id))
+        .where(and(...conditions))
+        .orderBy(desc(expenses.date), desc(expenses.createdAt))
+        .limit(pageSize)
+        .offset(offset),
+      db
+        .select({ count: sum(expenses.id) })
+        .from(expenses)
+        .where(and(...conditions)),
+    ]);
+
+    const responseExpenses = expensesData.map((r) => ({
       id: r.id,
       user_id: r.userId.toString(),
       date: r.date,
@@ -211,6 +222,10 @@ export async function fetchFilteredExpenses(
       created_at: r.createdAt.toISOString(),
       created_by: r.createdBy,
     })) as Expense[];
+
+    const totalCount = Number(totalCountData[0]?.count) || 0;
+
+    const response = { expenses: responseExpenses, totalCount };
     console.log("--- fetchFilteredExpenses Response ---", response);
     return response;
   } catch (error) {

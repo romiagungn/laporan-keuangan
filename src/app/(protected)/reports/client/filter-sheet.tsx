@@ -16,20 +16,24 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { getCategories } from "@/lib/actions";
 import { MultiSelect } from "@/components/ui/multi-select";
+import { useRouter, useSearchParams } from "next/navigation";
 
 const FilterSchema = z.object({
-  from: z.date(),
-  to: z.date(),
+  from: z.string().optional(),
+  to: z.string().optional(),
   categoryIds: z.array(z.number()).optional(),
 });
 
 type FilterFormValues = z.infer<typeof FilterSchema>;
 
 interface FilterSheetProps {
-  onFilter: (filters: FilterFormValues) => void;
+  onFilter?: (filters: FilterFormValues) => void;
 }
 
-export function FilterSheet({ onFilter }: FilterSheetProps) {
+export function FilterSheet({}: FilterSheetProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   const [categories, setCategories] = React.useState<
     { id: number; name: string }[]
   >([]);
@@ -41,9 +45,9 @@ export function FilterSheet({ onFilter }: FilterSheetProps) {
   const form = useForm<FilterFormValues>({
     resolver: zodResolver(FilterSchema),
     defaultValues: {
-      from: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-      to: new Date(),
-      categoryIds: [],
+      from: searchParams.get("from") || new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split("T")[0],
+      to: searchParams.get("to") || new Date().toISOString().split("T")[0],
+      categoryIds: searchParams.getAll("categoryId").map(Number),
     },
   });
 
@@ -53,7 +57,25 @@ export function FilterSheet({ onFilter }: FilterSheetProps) {
   }));
 
   const handleSubmit = (values: FilterFormValues) => {
-    onFilter(values);
+    const params = new URLSearchParams(searchParams);
+    if (values.from) {
+      params.set("from", values.from);
+    } else {
+      params.delete("from");
+    }
+    if (values.to) {
+      params.set("to", values.to);
+    } else {
+      params.delete("to");
+    }
+    if (values.categoryIds && values.categoryIds.length > 0) {
+      params.delete("categoryId"); // Clear existing categoryIds
+      values.categoryIds.forEach(id => params.append("categoryId", String(id)));
+    } else {
+      params.delete("categoryId");
+    }
+    params.set("page", "1"); // Reset page to 1 when filters change
+    router.push(`/reports?${params.toString()}`);
   };
 
   return (
@@ -71,14 +93,8 @@ export function FilterSheet({ onFilter }: FilterSheetProps) {
               <FormControl>
                 <Input
                   type="date"
-                  value={
-                    field.value ? field.value.toISOString().split("T")[0] : ""
-                  }
-                  onChange={(e) => {
-                    field.onChange(
-                      e.target.value ? new Date(e.target.value) : undefined,
-                    );
-                  }}
+                  value={field.value || ""}
+                  onChange={field.onChange}
                 />
               </FormControl>
               <FormMessage />
@@ -94,14 +110,8 @@ export function FilterSheet({ onFilter }: FilterSheetProps) {
               <FormControl>
                 <Input
                   type="date"
-                  value={
-                    field.value ? field.value.toISOString().split("T")[0] : ""
-                  }
-                  onChange={(e) => {
-                    field.onChange(
-                      e.target.value ? new Date(e.target.value) : undefined,
-                    );
-                  }}
+                  value={field.value || ""}
+                  onChange={field.onChange}
                 />
               </FormControl>
               <FormMessage />
