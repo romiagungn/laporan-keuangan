@@ -3,8 +3,8 @@
 import { getUserSession } from "@/lib/session";
 import { db } from "@/lib/db";
 import { expenses } from "../schema";
-import { eq, desc } from "drizzle-orm";
-import type { Expense } from "@/lib/definitions";
+// import { eq, desc } from "drizzle-orm";
+// import type { Expense } from "@/lib/definitions";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
 import { revalidatePath } from "next/cache";
@@ -17,31 +17,31 @@ async function getUserIdOrThrow() {
     return session;
 }
 
-export async function fetchAllExpenses(): Promise<
-  Omit<Expense, "user_id" | "created_at" | "category">[]
-> {
-  console.log("--- fetchAllExpenses Request ---");
-  try {
-    const { userId } = await getUserIdOrThrow();
-    const results = await db.query.expenses.findMany({
-        where: eq(expenses.userId, parseInt(userId)),
-        columns: {
-            id: true,
-            date: true,
-            amount: true,
-            description: true,
-            categoryId: true
-        },
-        orderBy: [desc(expenses.date)]
-    });
-    const response = results.map(r => ({ ...r, amount: Number(r.amount) }));
-    console.log("--- fetchAllExpenses Response ---", response);
-    return response;
-  } catch (error) {
-    console.error("Database Error:", error);
-    throw new Error("Gagal mengambil semua data pengeluaran untuk ekspor.");
-  }
-}
+// export async function fetchAllExpenses(): Promise<
+//   Omit<Expense, "user_id" | "created_at" | "category">[]
+// > {
+//   console.log("--- fetchAllExpenses Request ---");
+//   try {
+//     const { userId } = await getUserIdOrThrow();
+//     const results = await db.query.expenses.findMany({
+//         where: eq(expenses.userId, parseInt(userId)),
+//         columns: {
+//             id: true,
+//             date: true,
+//             amount: true,
+//             description: true,
+//             categoryId: true
+//         },
+//         orderBy: [desc(expenses.date)]
+//     });
+//     const response = results.map(r => ({ ...r, amount: Number(r.amount) }));
+//     console.log("--- fetchAllExpenses Response ---", response);
+//     return response;
+//   } catch (error) {
+//     console.error("Database Error:", error);
+//     throw new Error("Gagal mengambil semua data pengeluaran untuk ekspor.");
+//   }
+// }
 
 export async function importExpenses(fileContent: string, fileType: string) {
     console.log("--- importExpenses Request ---", { fileType });

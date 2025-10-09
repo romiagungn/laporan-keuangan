@@ -12,31 +12,29 @@ import {
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
+export const users = pgTable(
+    "users",
+    {
+      id: serial("id").primaryKey(),
+      name: text("name"),
+      email: text("email").notNull(),
+      password: text("password").notNull(),
+      familyId: integer("family_id").references((): any => families.id),
+      createdAt: timestamp("created_at").defaultNow().notNull(),
+    },
+    (users) => ({
+      uniqueIdx: uniqueIndex("unique_idx").on(users.email),
+    }),
+);
+
 export const families = pgTable("families", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   ownerId: integer("owner_id")
-    .notNull()
-    .references(() => users.id),
+      .notNull()
+      .references(() => users.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
-
-export const users = pgTable(
-  "users",
-  {
-    id: serial("id").primaryKey(),
-    name: text("name"),
-    email: text("email").notNull(),
-    password: text("password").notNull(),
-    familyId: integer("family_id").references(() => families.id),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-  },
-  (users) => {
-    return {
-      uniqueIdx: uniqueIndex("unique_idx").on(users.email),
-    };
-  },
-);
 
 export const categories = pgTable("categories", {
   id: serial("id").primaryKey(),
@@ -62,7 +60,6 @@ export const expenses = pgTable("expenses", {
   createdBy: text("created_by"),
 });
 
-// --- Fitur Baru: Tabel Pemasukan (Incomes) ---
 export const incomes = pgTable("incomes", {
   id: serial("id").primaryKey(),
   userId: integer("user_id")
@@ -76,7 +73,6 @@ export const incomes = pgTable("incomes", {
   createdBy: text("created_by"),
 });
 
-// --- Fitur Baru: Tabel Anggaran (Budgets) ---
 export const budgets = pgTable(
   "budgets",
   {
@@ -105,18 +101,17 @@ export const budgets = pgTable(
   },
 );
 
-// --- Fitur Baru: Tabel Transaksi Berulang (Recurring Transactions) ---
 export const recurringTransactions = pgTable("recurring_transactions", {
   id: serial("id").primaryKey(),
   userId: integer("user_id")
     .notNull()
     .references(() => users.id),
-  type: varchar("type", { length: 50 }).notNull(), // 'income' or 'expense'
+  type: varchar("type", { length: 50 }).notNull(),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
   description: text("description"),
   categoryId: integer("category_id").references(() => categories.id), // For expenses
-  source: varchar("source", { length: 256 }), // For incomes
-  frequency: varchar("frequency", { length: 50 }).notNull(), // 'daily', 'weekly', 'monthly', 'yearly'
+  source: varchar("source", { length: 256 }),
+  frequency: varchar("frequency", { length: 50 }).notNull(),
   startDate: date("start_date").notNull(),
   nextDate: date("next_date").notNull(),
   endDate: date("end_date"),
@@ -124,7 +119,7 @@ export const recurringTransactions = pgTable("recurring_transactions", {
   createdBy: text("created_by"),
 });
 
-export const usersRelations = relations(users, ({ many, one }) => ({
+export const usersRelations = relations(users, ({ one, many }) => ({
   expenses: many(expenses),
   categories: many(categories),
   incomes: many(incomes),
@@ -135,11 +130,22 @@ export const usersRelations = relations(users, ({ many, one }) => ({
   family: one(families, {
     fields: [users.familyId],
     references: [families.id],
+    relationName: "family_members",
+  }),
+  ownedFamily: one(families, {
+    fields: [users.id],
+    references: [families.ownerId],
+    relationName: "family_owner",
   }),
 }));
 
-export const familiesRelations = relations(families, ({ many }) => ({
-  users: many(users),
+export const familiesRelations = relations(families, ({ one, many }) => ({
+  members: many(users, { relationName: "family_members" }),
+  owner: one(users, {
+    fields: [families.ownerId],
+    references: [users.id],
+    relationName: "family_owner",
+  }),
 }));
 
 export const categoriesRelations = relations(categories, ({ one, many }) => ({

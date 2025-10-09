@@ -12,7 +12,7 @@ import { FilterSheet } from "./filter-sheet";
 
 import { CustomReportsManager } from "./custom-reports-manager";
 
-interface ReportsClientProps: {
+interface ReportsClientProps {
   initialCategoryData: any[];
   initialInsightData: any;
 }

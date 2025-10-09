@@ -44,6 +44,7 @@ import {
 import { toast } from "sonner";
 import { createExpense, updateExpense } from "@/lib/actions";
 import type { Category, Expense } from "@/lib/definitions";
+import { ReceiptScanner } from "./receipt-scanner";
 
 const FormSchema = z.object({
   amount: z.number().min(1, { message: "Please enter an amount." }),
@@ -135,6 +136,22 @@ export function ExpenseForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state]);
 
+  const handleScanSuccess = (data: {
+    amount: number | null;
+    date: Date | null;
+    description: string | null;
+  }) => {
+    if (data.amount) {
+      form.setValue("amount", data.amount);
+    }
+    if (data.date) {
+      form.setValue("date", data.date);
+    }
+    if (data.description) {
+      form.setValue("description", data.description);
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
@@ -144,6 +161,13 @@ export function ExpenseForm({
             {isEditMode ? "Edit Pengeluaran" : "Tambah Pengeluaran Baru"}
           </DialogTitle>
         </DialogHeader>
+        <div className="my-4">
+          <ReceiptScanner onScanSuccess={handleScanSuccess}>
+            <Button type="button" variant="outline" className="w-full">
+              Pindai Struk
+            </Button>
+          </ReceiptScanner>
+        </div>
         <Form {...form}>
           <form action={formAction} className="space-y-4">
             <FormField

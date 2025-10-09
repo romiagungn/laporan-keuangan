@@ -12,19 +12,22 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
 
-// Type definition for the family details prop
 type Family = {
   id: number;
   name: string;
   ownerId: number;
-  users: {
+  owner: {
+    id: number;
+    name: string | null;
+    email: string;
+  };
+  members: {
     id: number;
     name: string | null;
     email: string;
   }[];
 };
 
-// --- Action Buttons ---
 function AddMemberButton() {
   const { pending } = useFormStatus();
   return <Button type="submit" disabled={pending}>{pending ? "Menambah..." : "Tambah Anggota"}</Button>;
@@ -92,22 +95,20 @@ function LeaveFamilyForm() {
   );
 }
 
-// --- Main Dashboard Component ---
 export function FamilyDashboard({ family, userId }: { family: Family; userId: number }) {
   const isOwner = family.ownerId === userId;
-  const owner = family.users.find(u => u.id === family.ownerId);
 
   return (
     <div className="space-y-8">
       <Card>
         <CardHeader>
-          <CardTitle>Keluarga "{family.name}"</CardTitle>
-          {owner && <CardDescription>Dimiliki oleh: {owner.name || owner.email}</CardDescription>}
+          <CardTitle>{`Keluarga "${family.name}"`}</CardTitle>
+          {family.owner && <CardDescription>Dimiliki oleh: {family.owner.name || family.owner.email}</CardDescription>}
         </CardHeader>
         <CardContent className="space-y-4">
           <h3 className="font-semibold">Anggota</h3>
           <div className="space-y-3">
-            {family.users.map(member => (
+            {family.members.map(member => (
               <div key={member.id} className="flex items-center justify-between p-2 rounded-md border">
                 <div className="flex items-center gap-3">
                   <Avatar>

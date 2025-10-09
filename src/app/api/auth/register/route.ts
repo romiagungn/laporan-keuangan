@@ -11,7 +11,9 @@ const UserSchema = z.object({
   password: z
     .string()
     .min(6, { message: "Password must be at least 6 characters." }),
-  family: z.string().min(3, { message: "Family name must be at least 3 characters." }),
+  family: z
+    .string()
+    .min(3, { message: "Family name must be at least 3 characters." }),
 });
 
 export async function POST(request: Request) {
@@ -26,7 +28,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { name, email, password, family } = validation.data;
+    const { name, email, password, family: familyName } = validation.data;
 
     const existingUser = await db.query.users.findFirst({
       where: eq(users.email, email),
@@ -39,29 +41,61 @@ export async function POST(request: Request) {
       );
     }
 
-    let familyId: number;
-    const existingFamily = await db.query.families.findFirst({
-      where: eq(families.name, family),
-    });
+    const newUserId = await db.transaction(async (tx) => {
+      const hashedPassword = await bcryptjs.hash(password, 10);
+      const newUserResult = await tx
+        .insert(users)
+        .values({
+          name,
+          email,
+          password: hashedPassword,
+        })
+        .returning({ id: users.id });
 
-    if (existingFamily) {
-      familyId = existingFamily.id;
-    } else {
-      const newFamily = await db.insert(families).values({ name: family }).returning();
-      familyId = newFamily[0].id;
-    }
+      const createdUser = newUserResult[0];
+      if (!createdUser) {
+        tx.rollback();
+        throw new Error("Failed to create user.");
+      }
 
-    const hashedPassword = await bcryptjs.hash(password, 10);
+      // 2. Cari atau buat keluarga
+      let familyId: number;
+      const existingFamily = await tx.query.families.findFirst({
+        where: eq(families.name, familyName),
+      });
 
-    await db.insert(users).values({
-      name,
-      email,
-      password: hashedPassword,
-      familyId,
+      if (existingFamily) {
+        familyId = existingFamily.id;
+      } else {
+        const newFamilyResult = await tx
+          .insert(families)
+          .values({
+            name: familyName,
+            ownerId: createdUser.id, // Set ownerId
+          })
+          .returning({ id: families.id });
+
+        const newFamily = newFamilyResult[0];
+        if (!newFamily) {
+          tx.rollback();
+          throw new Error("Failed to create family.");
+        }
+        familyId = newFamily.id;
+      }
+
+      await tx
+        .update(users)
+        .set({ familyId: familyId })
+        .where(eq(users.id, createdUser.id));
+
+      return createdUser.id;
     });
 
     return NextResponse.json(
-      { message: "User created successfully." },
+      {
+        message: "User and family association created successfully.",
+        userId: newUserId,
+      },
       { status: 201 },
     );
   } catch (error) {

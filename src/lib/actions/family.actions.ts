@@ -44,7 +44,14 @@ export async function getFamilyDetails() {
     with: {
       family: {
         with: {
-          users: {
+          members: {
+            columns: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          owner: {
             columns: {
               id: true,
               name: true,
@@ -56,7 +63,11 @@ export async function getFamilyDetails() {
     },
   });
 
-  return currentUser?.family;
+  if (!currentUser?.family) {
+    return null;
+  }
+
+  return currentUser.family;
 }
 
 export async function createFamily(name: string) {
@@ -79,6 +90,10 @@ export async function createFamily(name: string) {
     .insert(families)
     .values({ name, ownerId: userId })
     .returning();
+
+  if (!newFamily) {
+    throw new Error("Gagal membuat keluarga. Silakan coba lagi.");
+  }
 
   await db
     .update(users)

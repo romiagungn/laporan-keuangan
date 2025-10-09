@@ -9,9 +9,9 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { saveReport, deleteSavedReport, getSavedReports } from "@/lib/actions/report.actions.ts";
+import { saveReport, deleteSavedReport, getSavedReports } from "@/lib/actions/report.actions";
 import { toast } from "sonner";
-import { Bookmark, Trash2, X } from "lucide-react";
+import { Bookmark, X } from "lucide-react";
 
 type SavedReport = {
   id: number;
